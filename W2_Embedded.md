@@ -174,12 +174,62 @@ int main (void){
 }
 ```
 결과 : 위 테스트 코드를 컴파일시, 사용자마다 1 혹은 77이 다르게 나온다. 
-- 위 코드
+- 위 코드를 통해서 C언어는(컴파일러는) 배열의 경계(바운더리)를 검사 해 주지 않는다 따라서 사용자가 배열을 사용할때는 인덱스가 0 부터 시작한다는 것을 꼭 명심하여야 한다.
+
+## !!! 추가로 공부 해야 할 부분 : 한글의 표시 방식
+> strcat 함수 소스코드 분석
+```C
+//char * strcpy ( char * dest, const char * source ); 문자열을 복사하는 함수
+//문자열을 복사한 후 표준 출력 스트림에 출력
+ 
+#pragma warning(disable:4996)
+#include <string.h>
+#include <stdio.h>
+ 
+char *ehstrcpy(char *dest, const char *source)
+{
+    char *old_dest = dest;//원래 dest를 기억
+    for (; *dest = *source; dest++, source++);//거짓인 문자를 복사할 때까지 반복
+    return old_dest;
+}
+int main (void)
+{
+    char *src = "hello world";    
+    char name[50] = "abc";
+    char name2[50] = "abc";
+    
+    printf("<strcpy 이용> name: %s \n",strcpy(name,src));
+    printf("<ehstrcpy 이용>name: %s \n", ehstrcpy(name, src));
+    return 0;
+}
+```
+출처 : Link (언제나 휴일님 블로그)  Link ( http://ehpub.co.kr/strcpy-%ED%95%A8%EC%88%98/ )
+
 
 > volitaile 의미 (2가지)
-- 캐쉬메모리에서 값을 가져오지마라
-- 
+- 캐쉬메모리에서 값을 가져오지마라, 주소에 직접 접근 해라
+- 컴파일러 최적화 제한 명령어
 
+
+# =============포인터에 관하여=============
+> 해마책이 좋은 이유 : 인터페이스를 설명하고 메인을 짜넣게 함
+- Ex) strcat ,
+
+
+> 포인터 3형제 : 이중포인터, 배열포인터, 포인터배열
+### 
+
+> 함수 포인터
+- 주소를 저장하면 포인터, 배열의 주소를 저장하면 배열포인터, 함수의 주소를 저장하면 함수포인터가 된다.
+- 함수의 이름은 원래 포인터(주소 값)
+- 함수의 이름이 주소임을 확인하기 위해서는 임베디드 기준 xx.map파일을 확인 해 보면 된다 
+- (여담) 프로그램 카운터 PC는 다음에 실행할 명령의 주소임.
+- 함수 호출 시 함수의 포인터(주소)로 프로그램 카운터가 이동하여 명령어를 수행함
+
+
+> 콜백
+- 함수를 Call 하는 방향이 반대라는 개념, 함수포인터로 함수를 대신 호출하는 방식
+- 디바이스 드라이버에 많이 사용됨
 
 
 ## 배열의 주소에 관하여 - 같지만 다른 표현방식
