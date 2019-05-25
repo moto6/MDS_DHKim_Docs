@@ -99,12 +99,11 @@
    - 선행조건이 없는 경우에도 실행 효율을 위해 의도적으로 중첩해 쓸 수 있습니다
    - 분할 정복 기법 -> 비교항목이 많은경우 if문 중첩으로 효율적 프로그래밍 ->> MECE하게 if문을 구성해야함(Mutually exclusive & closely Exhausty) ->> 선행조건이 필요하다고 오해할 소지가 있으며 코드의 가독성이 떨어질 가능성 존재
    - if-else문을 사용할때는 중괄호 사용 : Dangling-else문제를 발생시킬 수 있음
-   - 
-
  ```
  - switch case문
   ```
-    - ㄴㅇㄹ
+    - Switch 문에서 조건식은 정수식만 사용함
+    - break;구문이 없을 시 Case분기 동작하지 않고 하위항목 순차실행됨 (의도적인 break생략도 가능)
   ```
  - 참조 : [ **Dangling-else와 Short-curcuit-Eval 문제** ](https://m.blog.naver.com/PostView.nhn?blogId=satyee&logNo=140128571147&proxyReferer=https%3A%2F%2Fwww.google.com%2F) <-클릭하여 링크로 연결
 # 6.반복문
