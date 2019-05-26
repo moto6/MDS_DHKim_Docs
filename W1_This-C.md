@@ -1,6 +1,26 @@
 
 [이것이 C언어다] 완독 후 핵심정리 & 독자서평
 ====
+> # Linux 개발환경 구축
+ >  ## 1. Linux Setup (Ubuntu 16.04)
+  >    ### ~$ sudo apt-get install git
+  >    ### ~$ sudo apt-get install vim
+  >    ### ~$ sudo apt-get install bulid-essential 
+ > ## 2. 에디터
+   >   #### vim 사용
+   >   #### /.vimrc 파일 내용
+   >
+   >   ```c
+   >    (내용추가예정)   
+   >   ```
+
+> # Windows 개발환경 구축
+ >  ## 1. Windows Setup (Windows 10)
+  > [ **Dev-cpp**](https://sourceforge.net/projects/orwelldevcpp/) (링크) 사용
+  > ### 윈도우 유저라도 Git은 사랑입니다 
+
+
+
 # 0.INDEX
  * 이것이 C언어다 (서현우님 저서) 학습 후 학습내용 복습겸 정리와 서평 문서입니다.
   ```
