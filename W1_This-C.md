@@ -106,8 +106,22 @@
     - break;구문이 없을 시 Case분기 동작하지 않고 하위항목 순차실행됨 (의도적인 break생략도 가능)
   ```
  - 참조 : [ **Dangling-else와 Short-curcuit-Eval 문제** ](https://m.blog.naver.com/PostView.nhn?blogId=satyee&logNo=140128571147&proxyReferer=https%3A%2F%2Fwww.google.com%2F) <-클릭하여 링크로 연결
+
 # 6.반복문
+ - 3 가지 형태의 반복문이 존재합니다
+ ```
+   1. for문
+     - 조건식이 참인동안 실행(거짓이 되면 중단)
+     - 최초 조건이 거짓이면 한번도 실행되지 않음
+
+   2. while문
+     - 조건식이 참인동안 실행(거짓이 되면 중단)
+     - 최초 조건이 거짓이면 한번도 실행되지 않음
+     - 
+   3. do while문
+ ```
 # 7.함수
+
 # 8.배열
 # 9.포인터
 # 10.배열과 포인터
