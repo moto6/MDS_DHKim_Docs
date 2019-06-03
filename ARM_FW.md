@@ -47,14 +47,14 @@
    3. Bootloader기능
  * 부트로더에서 펌웨어로의 점프는 이중함수 포인터!
 
-# 98. My To Do List
+# 5. My To Do List
   * 디자인패턴 공부
   * 펌웨어든 소프트웨어든 많이 짜보자
   * F746Disco보드로 공부해보자
   * Atmega프로젝트 빨리 끝내자
   * 디지털 필터 공부해보자
   * EABI : (Embedded Application Binary Interface) 변수, 레지스터, 스택, 명령어, 자료형의 표준 변환 정의  (요약) : ARM 컴파일러가 고려 해야 할 표준
-# 99. 결론 
+# 6. 부트로더 활용 개발 방법 정의 
   * 부트로더 활용한 펌웨어 개발
     1. VECTOR 주소 변경(System_stm32f7xx.c)
     2. (bootloader에서) 부트로더 모드 진입 조건문과 부트모드 접근 아닐때 펌웨어의 주소로 Jump하면 됨. 주의사항으로는 Peri들 Deinit 필수 (특히 USB, UART, 모터, LED등등..)
