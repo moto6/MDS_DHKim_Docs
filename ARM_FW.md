@@ -1,5 +1,8 @@
 # DHKim ROBOTIS Firmward 강좌 정리
  * 20190601~02 이틀간 마곡 로보티즈 Firmware설계 교육 정리
+ * Orignal From "Baram님" 
+     1. [Baram님 네이버 블로그 주소](https://blog.naver.com/chcbaram/221337996036)
+     2. [Baram님 깃허브 주소](https://github.com/chcbaram)
 # 1. 펌웨어 구조 설계의 필요성
  * 제조사 라이브러리에 의존하지 않는(MCU벤더에 의해 코가 꿰이는 상황이 발생하지 않도록) 제조사에서 제공하는 라이브러리와 어플리케이션 사이에 하나의 레이어 추가하기가 핵심
  * 기능을 구현하기 위한 인터페이스는 공통으로 가져가는것 - 스위치, LED, UART, Print, USB...
