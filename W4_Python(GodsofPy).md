@@ -6,8 +6,8 @@
  - 정답은 없겠지만, 더더군다나 파이썬 입문 3일차에 끄적일만한 부분은 아니지만, 나름의 insight가 담긴 글들을 정리해봤다. ( 필자는 항상 두괄식 글쓰기를 지향하므로 "나름의" 결론먼저 제시하고 참조한 사이트를 나열하겠다 )
       # 결론 : Life is too short, You need Python.
   ```
-   1. 파이썬에 대한 잘 정리된 균형잡힌 시각의 글이다(나무위키),장점뿐 아니라 단점도 서술되어있고 다른 언어에 비교한 장단점을 파악할 수 있다. [https://namu.wiki/w/Python]
-   2.파이썬으로 개발한 프로그램들의 List이다.[https://github.com/vinta/awesome-python]
+   1. [파이썬에 대한 잘 정리된 글 장점뿐 아니라 단점도 서술되어있고 다른 언어에 비교한 장단점](https://namu.wiki/w/Python)
+   2. [파이썬으로 개발한 프로그램들의 List](https://github.com/vinta/awesome-python)
    3.
 
    여기서 개인적인 경험을 더하자면
