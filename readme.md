@@ -21,8 +21,9 @@
  ## 교육과정 외 개인 학습내용(insight)
    * [ARM 펌웨어 설계 강좌 수업정리, 6/1~2(토~일 마곡 로보티즈 캠퍼스) / baram님 교육 정리](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/ARM_FW.md) 
    * [VIM환경설정& 코드컨벤션/생산성 향상을 위한 나만의 환경설정](https://github.com/d-h-k/DHKim_EnvSettings)
-   
-   
+   * [빡독프로젝트 : 1. 완벽한 공부법]()
+   * [빡독프로젝트 : 2. 일취월장]()
+   * [빡독프로젝트 : 3. 자기경영노트 From p.
  ## 1주차 요약본 & 수업자료 Link
    * [W1_This-C 수업요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W1_This-C.md)
    * [W1_C언어 자료 모음]()
