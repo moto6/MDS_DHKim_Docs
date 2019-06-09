@@ -11,14 +11,18 @@
      * [저자카페](https://cafe.naver.com/windev)
   4. 4주차:Python 언어 -> [파이썬의 신](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&linkClass=331503&barcode=9788997924271)
      * [저자카페](https://cafe.naver.com/godofpython)
- ## 교육과정 외 학습 참고사항
-   * 생산성 향상을 위한 나만의 환경설정 : [VIM환경설정& 코드컨벤션](https://github.com/d-h-k/DHKim_EnvSettings)
-   * MCU학습 : [ARM 펌웨어 설계 강좌 수업정리 / From baram님](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/ARM_FW.md)
-   * ROS플랫폼 학습 : [ros-seminar / From robotpilot님](https://github.com/d-h-k/ros-seminar.git)
+ ## 교육과정 외 참고(improt)
+
+   * ROS플랫폼 : [ros-seminar / From robotpilot님](https://github.com/d-h-k/ros-seminar.git)
    * 인피니언 MCU및 모형차 프로젝트 활용 : [InfineonRacer / From ACE lab](https://github.com/realsosy/InfineonRacer)
    * 깃허브가 생소하신 분들을 위해 : [git-training / From Teaung님](https://github.com/Taeung/git-training)
    * 마크다운이 생소하신 분들을 위해 : [From ihoneymon님](https://gist.github.com/ihoneymon/652be052a0727ad59601)      
               
+ ## 교육과정 외 개인 학습내용(insight)
+   * [ARM 펌웨어 설계 강좌 수업정리, 6/1~2(토~일 마곡 로보티즈 캠퍼스) / baram님 교육 정리](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/ARM_FW.md) 
+   * [VIM환경설정& 코드컨벤션/생산성 향상을 위한 나만의 환경설정](https://github.com/d-h-k/DHKim_EnvSettings)
+   
+   
  ## 1주차 요약본 & 수업자료 Link
    * [W1_This-C 수업요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W1_This-C.md)
    * [W1_C언어 자료 모음]()
@@ -41,9 +45,6 @@
  
  ## 5주차 요약본 & 수업자료 Link
    * 5주차 수업내용 요약
-   
-     1. 김남우 
-       [MDS2450] <Link>
      2. 김동훈
        [...] <Link>
    
