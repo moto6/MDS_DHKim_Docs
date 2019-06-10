@@ -21,15 +21,16 @@
    * 깃허브가 생소하신 분들을 위해 : [git-training / From Teaung님](https://github.com/Taeung/git-training)
    * 마크다운이 생소하신 분들을 위해 : [From ihoneymon님](https://gist.github.com/ihoneymon/652be052a0727ad59601)      
    * make/makefile 튜토리얼 : [From tuwlab님]
-        1. [Make 튜토리얼] Makefile 예제와 작성 방법 및 기본 패턴(https://www.tuwlab.com/27193)
-        2. [CMake 튜토리얼] 1. CMake 소개와 예제, 내부 동작 원리(https://www.tuwlab.com/27234)
-        3. [CMake 튜토리얼] 2. CMakeLists.txt 주요 명령과 변수 정리(https://www.tuwlab.com/27260)
-        4. [CMake 튜토리얼] 3. CMakeLists.txt 기본 패턴(https://www.tuwlab.com/27270)
+        1. [Makefile 예제와 작성 방법 및 기본 패턴](https://www.tuwlab.com/27193)
+        2. [CMake 소개와 예제, 내부 동작 원리](https://www.tuwlab.com/27234)
+        3. [CMakeLists.txt 주요 명령과 변수 정리](https://www.tuwlab.com/27260)
+        4. [CMakeLists.txt 기본 패턴](https://www.tuwlab.com/27270)
 
  #
  ## 교육과정 외 개인 학습내용(insight, 책 제외)
    * [ARM 펌웨어 설계 강좌 수업정리, 6/1~2(토~일 마곡 로보티즈 캠퍼스) / baram님 교육 정리](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/ARM_FW.md) 
    * [VIM환경설정& 코드컨벤션/생산성 향상을 위한 나만의 환경설정](https://github.com/d-h-k/DHKim_EnvSettings)
+   * [김남우님의 마크다운 강의록 정리]()
 
  #
  ## 추가학습도서
