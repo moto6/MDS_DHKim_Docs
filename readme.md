@@ -33,8 +33,29 @@
    * [김남우님의 마크다운 강의록 정리]()
 
  #
- ## 추가학습도서
+ ## 추가 학습 도서
    * [학습 도서 리스트](https://github.com/d-h-k/My-PPAK-DOK-List/blob/master/README.md)
+   
+ #
+ ## 무료교육
+   * [최호성님의 컴퓨터 구조 기본](https://www.youtube.com/watch?v=uEzDvDw-L0o&t=12s)
+   * [최호성님의 CPU가 작동하는 원리](https://www.youtube.com/watch?v=BSDRpQr85qk)
+   * [더미의 FPGA 책/무료](https://cafe.naver.com/alteratown?iframe_url=/ArticleRead.nhn%3Fclubid=17573046%26menuid=%26boardtype=L%26page=1%26specialmenutype=%26userDisplay=15%26articleid=5744)
+   * [푸우님의 Coretex-M3 강의 동영상/무료](https://cafe.naver.com/embeddedcrazyboys/4592)
+   * [푸우님의 Coretex-M3 강의 교안/무료](https://cafe.naver.com/embeddedcrazyboys/4525)
+ 
+ #
+ ## 유료교육
+   * [C++ GUI 심화 QT/유료](https://www.udemy.com/qt-c-gui-tutorial-for-complete-beginners/)
+   * [임베디드 리눅스 포팅 심화 비글본/유료](https://www.udemy.com/embedded-linux-step-by-step-using-beaglebone/)
+   * [Free RTOS 강좌/유료](https://www.udemy.com/freertos-on-arm-processors/)
+   * [TI MSP430 MCU 강좌 링크/유료](https://www.udemy.com/mcu_msp430/)
+     * [TI MSP430 실습](https://www.element14.com/community/docs/DOC-78213/l/an-introduction-to-microcontrollers-and-the-c-programming-language-info?ICID=TIvalpo-udemy-topban#coursebreakdown)
+     * [TI 페이지](http://www.ti.com/tool/MSP-EXP430FR6989)
+     https://cafe.naver.com/embeddedcrazyboys
+   * [FPGA 강의/유료](https://www.udemy.com/learn-the-essentials-of-vhdl-and-fpga-development/)
+  
+ 
  #
  ## 1주차 요약본 & 수업자료 Link
    * [W1_This-C 수업요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W1_This-C.md)
