@@ -52,10 +52,7 @@
    * [TI MSP430 MCU 강좌 링크/유료](https://www.udemy.com/mcu_msp430/)
      * [TI MSP430 실습](https://www.element14.com/community/docs/DOC-78213/l/an-introduction-to-microcontrollers-and-the-c-programming-language-info?ICID=TIvalpo-udemy-topban#coursebreakdown)
      * [TI 페이지](http://www.ti.com/tool/MSP-EXP430FR6989)
-     https://cafe.naver.com/embeddedcrazyboys
-   * [FPGA 강의/유료](https://www.udemy.com/learn-the-essentials-of-vhdl-and-fpga-development/)
-  
- 
+   * [FPGA 강의/유료](https://www.udemy.com/learn-the-essentials-of-vhdl-and-fpga-development/) 
  #
  ## 1주차 요약본 & 수업자료 Link
    * [W1_This-C 수업요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W1_This-C.md)
