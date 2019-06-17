@@ -79,11 +79,11 @@
  
  ## 5주차 요약본 & 수업자료 Link
    * [W5 MDS2450임베디드 리눅스 보드 핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W5_MDS2450.md)
-   * [W5 수업자료](Link)
+   * [W5 수업자료 - 2주차]()
     
- ## 주차 요약본 & 수업자료 Link
-   * [W 핵심정리&요약](Link)
-   * [W 수업자료](Link)
+ ## 6주차 요약본 & 수업자료 Link
+   * [W6 핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W6_ARM_Processor.md)
+   * [W6 수업자료 - 2주차]()
     
  ## 주차 요약본 & 수업자료 Link
    * [W 핵심정리&요약](Link)
