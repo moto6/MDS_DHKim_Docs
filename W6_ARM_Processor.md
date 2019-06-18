@@ -6,6 +6,91 @@
   4. 
   5. 
  - [가일의 임베디드 스쿨 참조](https://blog.naver.com/guile21c)
+ 
+ 
+ #
+ ## 환경설정
+  - 강사님의 Makefile(disasm 나오는 코드)
+   ```
+   ##########[Embedded C test firmware Makefile]##############
+   #
+   # NAME : Makefile - S3C2450 test Firmware Makefile
+   # Brief history
+   #----------------------------------------------------------
+   #
+   #	2015.08.10, Seonghye : Modified
+   #
+   ###########################################################
+
+   .EXPORT_ALL_VARIABLES:
+
+   ## If you want to change path, modify here
+
+   TOPDIR =$(PWD)
+   TOOLPATH = /opt/CodeSourcery/Sourcery_G++_Lite
+
+   SRCS	= libc.c  Main.c Uart.c exception.c
+   ASRCS	= s3c2450_startup.S libs.S
+
+   OBJS	= ${SRCS:.c=.o} ${ASRCS:.S=.o}
+
+   CC = $(TOOLPATH)/bin/arm-none-eabi-gcc
+   LD = $(TOOLPATH)/bin/arm-none-eabi-ld
+   OBJCOPY	= $(TOOLPATH)/bin/arm-none-eabi-objcopy
+   OBJDUMP	= $(TOOLPATH)/bin/arm-none-eabi-objdump
+
+   LIBCDIR =$(TOOLPATH)/arm-none-eabi/lib
+   LIBGCCDIR =$(TOOLPATH)/lib/gcc/arm-none-eabi/4.5.2
+   LIBC =$(TOOLPATH)/arm-none-eabi/lib/libc.a
+   LIBGCC = $(TOOLPATH)/lib/gcc/arm-none-eabi/4.5.2/libgcc.a
+
+   ## User library for UART1 Driver
+   MY_LIB_PATH = $(TOPDIR)/Libraries
+   LIBUART =  $(MY_LIB_PATH)/libUart1.a
+
+   #### Option Definition ####
+   INCLUDE	=  -I$(TOPDIR) -I$(LIBCDIR)/include -I$(LIBGCCDIR)/include
+
+   CFLAGS	+= $(INCLUDE) -g -Wall -Wstrict-prototypes -Wno-trigraphs -O0
+   CFLAGS	+= -fno-strict-aliasing -fno-common -pipe
+   CFLAGS += -march=armv4t -mtune=arm9tdmi -fno-builtin -mapcs
+
+   LDFLAGS	= --cref -Bstatic -nostartfiles -T S3C2450-RAM.ld -Map 2450main.map
+   OCFLAGS = -O binary -R .note -R .comment -S
+
+   2450TEST = MDS2450.bin
+
+   %.o:%.S
+      $(CC) -c $(CFLAGS) -o $@ $<
+
+   %.o:%.c
+      $(CC) -c $(CFLAGS) -o $@ $<
+
+   all: $(2450TEST)
+
+   $(2450TEST) : $(OBJS)
+      $(LD) $(LDFLAGS) -o MDS2450 $(OBJS) $(LIBC) $(LIBGCC) \
+      -I$(LIBGCCDIR)/include -I$(LIBCDIR)/include -L$(LIBC) -L$(LIBGCCDIR) -lgcc
+
+      $(OBJCOPY) $(OCFLAGS) $(TOPDIR)/MDS2450 $(TOPDIR)/$@
+      $(OBJDUMP) -d $(TOPDIR)/MDS2450 > $(TOPDIR)/MDS2450.dis
+      cp $(TOPDIR)/$@ /tftpboot
+
+   clean:
+      rm -f *.o 
+      rm -f $(TOPDIR)/$(2450TEST)
+      rm -f $(TOPDIR)/MDS2450
+      rm -f $(TOPDIR)/2450main.map
+      
+   dep:
+      $(CC) -M $(INCLUDE) $(SRCS) $(ASRCS) > .depend
+
+   ifeq (.depend,$(wildcard .depend))
+   include .depend
+   endif					
+
+   ```
+ 
  #
   ## 이번주 학습내용 Overview
    - 이번주 학습목표 : 하드웨어 제어에 대한 개념(감잡기)확립, 프로세서에 대한 이해
@@ -36,7 +121,6 @@
        3. 데이터 버스
     - 폰노이만 아키텍쳐 VS 하버드 아키텍쳐
        - 데이터와 명령어 버스가 분리된 경우 하버드, 아닌겅우 폰노이만
-
     - 저장장치의 물리적 구성
        - [RAM]
          1. SRAM : flip-flop으로 구성(NOT Gate 2개의 Shift Registor)
@@ -50,26 +134,52 @@
        1. polling
        2. interrupt
        3. DMA
+ 
+ #
+  ## ARM Architecture  
+   - ARM Architecture 
+  
 
     - 리틀엔디안과 빅엔디안에 관하여
       - 리틀엔디안용 하드웨어가 별도로 존재하고 (메모리 배선에 의존적)
       - 리틀엔디안용 컴파일러 또한 별도로 존재한다.   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      
-
+    - .global 키워드의 의미
+      - 없으면 에러 발생 ...
+      - 유사어셈블러 sudo 코드
+    - b. 의미 while(1)
+      - c언어에서의 무한루프
+    - 다양한 명령어 지원
+      1. ARM 명령어
+      2. Thumb명령어 / (Thumb-2 명령어)
+      3. jazell 코어
+    - 다양한 인터럽트 : IRQ, FRQ
+      - FRQ 는 고속 인터럽트 : Low Latency
+      - ARM9이전 : PIC(프로그램 인터럽트), 이후 : VIC(벡터 인터럽트 컨트롤러) -> NVIC로 진화
+    - 프로그래머가 ASM 작성시 필요한 정보들 : Programmer's model
+      1. 명령어
+      2. 메모리 구조
+      3. 데이터 구조
+      4. 프로세서의 동작 모드
+      5. 프로세서 내부 레지스터 구성 및 사용법
+      6. Excption 처리
+      7. 인터럽트 처리
+    - 대부분의 회사에서는 코딩할사람은 많다. 문제해결할 사람은 적다.
+      - 문제를 해결할수 있는 해결사가 되자
+    - ARM의 명령어 3가지 종류
+      1. ARM명령어
+      2. Thumb/Thumb2
+      3. jazzle
+    - 명령어 관련한 알아둘 사항들
+      1. Load/Store 만으로 메모리접근
+      2. Branch 명령어(c언어의 goto)
+      3. 상대주소 방식
+      4. asm에서의 상수는 immedeate상수 -> #문자, 해시문자 사용
+      5. 32비트 고정 명령어 길이 사용 : pipeline 구성이 용이 = RISC 프로세서 특징
+      6. CISC프로세서는 가변길이 명령어(Veriable operand length)
+      7. 어셈블리어를배우는것은 임베디드의 개념을 탑재한 사람이 되는것
+      8. 기본개념(체계, system)이 중요한 이유는 문제해결
+    - 명령어 처리 절차(3단계 
+    
 
 
 
