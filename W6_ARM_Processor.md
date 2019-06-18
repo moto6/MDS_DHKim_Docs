@@ -7,90 +7,8 @@
   5. 
  - [가일의 임베디드 스쿨 참조](https://blog.naver.com/guile21c)
  
- 
- #
- ## 환경설정
-  - 강사님의 Makefile(disasm 나오는 코드)
-   ```
-   ##########[Embedded C test firmware Makefile]##############
-   #
-   # NAME : Makefile - S3C2450 test Firmware Makefile
-   # Brief history
-   #----------------------------------------------------------
-   #
-   #	2015.08.10, Seonghye : Modified
-   #
-   ###########################################################
 
-   .EXPORT_ALL_VARIABLES:
 
-   ## If you want to change path, modify here
-
-   TOPDIR =$(PWD)
-   TOOLPATH = /opt/CodeSourcery/Sourcery_G++_Lite
-
-   SRCS	= libc.c  Main.c Uart.c exception.c
-   ASRCS	= s3c2450_startup.S libs.S
-
-   OBJS	= ${SRCS:.c=.o} ${ASRCS:.S=.o}
-
-   CC = $(TOOLPATH)/bin/arm-none-eabi-gcc
-   LD = $(TOOLPATH)/bin/arm-none-eabi-ld
-   OBJCOPY	= $(TOOLPATH)/bin/arm-none-eabi-objcopy
-   OBJDUMP	= $(TOOLPATH)/bin/arm-none-eabi-objdump
-
-   LIBCDIR =$(TOOLPATH)/arm-none-eabi/lib
-   LIBGCCDIR =$(TOOLPATH)/lib/gcc/arm-none-eabi/4.5.2
-   LIBC =$(TOOLPATH)/arm-none-eabi/lib/libc.a
-   LIBGCC = $(TOOLPATH)/lib/gcc/arm-none-eabi/4.5.2/libgcc.a
-
-   ## User library for UART1 Driver
-   MY_LIB_PATH = $(TOPDIR)/Libraries
-   LIBUART =  $(MY_LIB_PATH)/libUart1.a
-
-   #### Option Definition ####
-   INCLUDE	=  -I$(TOPDIR) -I$(LIBCDIR)/include -I$(LIBGCCDIR)/include
-
-   CFLAGS	+= $(INCLUDE) -g -Wall -Wstrict-prototypes -Wno-trigraphs -O0
-   CFLAGS	+= -fno-strict-aliasing -fno-common -pipe
-   CFLAGS += -march=armv4t -mtune=arm9tdmi -fno-builtin -mapcs
-
-   LDFLAGS	= --cref -Bstatic -nostartfiles -T S3C2450-RAM.ld -Map 2450main.map
-   OCFLAGS = -O binary -R .note -R .comment -S
-
-   2450TEST = MDS2450.bin
-
-   %.o:%.S
-      $(CC) -c $(CFLAGS) -o $@ $<
-
-   %.o:%.c
-      $(CC) -c $(CFLAGS) -o $@ $<
-
-   all: $(2450TEST)
-
-   $(2450TEST) : $(OBJS)
-      $(LD) $(LDFLAGS) -o MDS2450 $(OBJS) $(LIBC) $(LIBGCC) \
-      -I$(LIBGCCDIR)/include -I$(LIBCDIR)/include -L$(LIBC) -L$(LIBGCCDIR) -lgcc
-
-      $(OBJCOPY) $(OCFLAGS) $(TOPDIR)/MDS2450 $(TOPDIR)/$@
-      $(OBJDUMP) -d $(TOPDIR)/MDS2450 > $(TOPDIR)/MDS2450.dis
-      cp $(TOPDIR)/$@ /tftpboot
-
-   clean:
-      rm -f *.o 
-      rm -f $(TOPDIR)/$(2450TEST)
-      rm -f $(TOPDIR)/MDS2450
-      rm -f $(TOPDIR)/2450main.map
-      
-   dep:
-      $(CC) -M $(INCLUDE) $(SRCS) $(ASRCS) > .depend
-
-   ifeq (.depend,$(wildcard .depend))
-   include .depend
-   endif					
-
-   ```
- 
  #
   ## 이번주 학습내용 Overview
    - 이번주 학습목표 : 하드웨어 제어에 대한 개념(감잡기)확립, 프로세서에 대한 이해
@@ -205,10 +123,164 @@
         - 이밖에도 abort, undefined, System, Exception 이 있음
         - Operating 모드 별 레지스터 : 6가지 모드별 37개의 레지스터가 존재한다.
         - 참고로,  IO 맵핑레지스터와 cpu 연산에서의 레지스터가 존재한다
-        
-    
+     - 스텍포인터(sp, R13)     
+       - 스텍포인터는 프로그램에서 사용하는 스텍의 위치를 지정하는 레지스터
+       - 프로세서의 동작 모드마다 별도로 할당된 SP레지스터가 존재한다
+       - ARM은 별도의 스텍 명령이 없다
+     - 레지스터는 두가지가 존재하는데,
+       1. 프로세서 레지스터 : 프로세서 내부의 고속 연산 버퍼 레지스터
+       2. 하드웨어 레지스터 : Core에 연결되여 주변 peri 에 memory mapped reg로 존재함.
+         - 위키백과 레지스터 검색 추천
+   ### 중간정리
+   - 레지스터는 총 37개가 존재함
+   - FIQ 는 private R8 레지스터가 존재함
+   - 동작모드마다 lr(링크레지스터)와 Sp(스텍포인터)가 존재함
+   - pc(프로그램 카운터) 는 읽기전용, 다음에 수행 할 위치를 담고 있는 레지스터
+   - 어셈블러로 구현하는 인터럽트 핸들러 : 마스터 핸들러 -> 함수호출 서브 핸들러
+   - 1개의 CPSR(Current Program status Registor)와 5개의 SPSR이 존재하며, SPSR은 CPSR이 복사된 형태이다.
+   - PSR(CPSR)의 레지스터 비트별 정보
+     - f,s,x,c 영역이 존재함
+     1. f영역
+        - N : 음수 비트(네거티브 플래그)
+        - Z : 영 비트(제로 플래그)
+        - C : 캐리 플래그
+        - V : 오버플로 플래그
+        - Q : 읽기전용 - 큐플래그, staturation 발생
+        - J : 읽기전용 - java 바이트코드
+     2. s영역
+        - 예약
+     3. x영역
+        - 예약
+     4. c영역
+        - I : IRQ 인터럽트 En/Dis
+        - F : FRQ 인터럽트 En/Dis
+        - T : Thumb state인지 아닌지를 표시
+        - Mode : 7가지 동작모드 결정
+   - 위에서 CPSR 레지스터의 구성요소에 대하 알아보았습니다.
+   - C영역 mode 레지스터 4비트로 7가지 모드가 존재하는데, 특권<-> 사이의 모드 전환에 대하여 공부해야함(75p)
+   > 특권모드와 비특권 모드 사이의 변환에 관하여
+   >> ㄴㅇㄹ
+   - ARM의 Exception
+     - Reset
+     - Undefined Instruction
+     - Software Interrupt
+     - Prefetch Abort
+     - Data Abort
+     - IQR
+     - FIQ
+   - FIQ 인터럽트 Latency는 짧다
+   - 프로세서의 Reset과 Start-up code
+     - 프로세서에 리셋신호가 입력되면 시퀀스 : 80페이지 참조
 
 
+   ## 중간점검
+   - 
+    1. ARM 아키텍처의 특징 4가지
+    2. Programmer's model이란 무엇인가?
+    3. 32비트 ARM 명령어가 가지는 특징은 무엇인가?
+    4. 16비트 Thumb 명령어가 가지는 특징
+    5. ARM 프로세서의 state에 대하여 설명하여라
+    6. 리틀엔디안-빅엔다인의 차이점 분석
+    7. ARM의 7가지 동작모드에 대하여 설명하여라
+    8. 스텍보인터와 링크 레지스터로 사용되는 레지스터는?
+    9. 프로그램 Status레지스터(PSR) 은 무엇인가?
+    10. Exception 이란 무엇>
+    11. Exception Vector 에 대하여 설명
+    12. Exception 이 발생하면 누가 어떤 행동을 하는지 설명하라
+    13. 인터럽트 Latency란 무었이며 FIQ의 인터럽트 Latency는 얼마인가?
+    14. 하드웨어적 리셋 신호가 구동되면 ARM의 동작에 대하여 논하여라
+
+
+   ## ARM프로세서의 디버깅에 관하여
+     - ㄹㄴㅇ
+      
+
+
+
+ 
+ #
+ ## 환경설정
+  - 강사님의 Makefile(disasm 나오는 코드)
+   ```
+   ##########[Embedded C test firmware Makefile]##############
+   #
+   # NAME : Makefile - S3C2450 test Firmware Makefile
+   # Brief history
+   #----------------------------------------------------------
+   #
+   #	2015.08.10, Seonghye : Modified
+   #
+   ###########################################################
+
+   .EXPORT_ALL_VARIABLES:
+
+   ## If you want to change path, modify here
+
+   TOPDIR =$(PWD)
+   TOOLPATH = /opt/CodeSourcery/Sourcery_G++_Lite
+
+   SRCS	= libc.c  Main.c Uart.c exception.c
+   ASRCS	= s3c2450_startup.S libs.S
+
+   OBJS	= ${SRCS:.c=.o} ${ASRCS:.S=.o}
+
+   CC = $(TOOLPATH)/bin/arm-none-eabi-gcc
+   LD = $(TOOLPATH)/bin/arm-none-eabi-ld
+   OBJCOPY	= $(TOOLPATH)/bin/arm-none-eabi-objcopy
+   OBJDUMP	= $(TOOLPATH)/bin/arm-none-eabi-objdump
+
+   LIBCDIR =$(TOOLPATH)/arm-none-eabi/lib
+   LIBGCCDIR =$(TOOLPATH)/lib/gcc/arm-none-eabi/4.5.2
+   LIBC =$(TOOLPATH)/arm-none-eabi/lib/libc.a
+   LIBGCC = $(TOOLPATH)/lib/gcc/arm-none-eabi/4.5.2/libgcc.a
+
+   ## User library for UART1 Driver
+   MY_LIB_PATH = $(TOPDIR)/Libraries
+   LIBUART =  $(MY_LIB_PATH)/libUart1.a
+
+   #### Option Definition ####
+   INCLUDE	=  -I$(TOPDIR) -I$(LIBCDIR)/include -I$(LIBGCCDIR)/include
+
+   CFLAGS	+= $(INCLUDE) -g -Wall -Wstrict-prototypes -Wno-trigraphs -O0
+   CFLAGS	+= -fno-strict-aliasing -fno-common -pipe
+   CFLAGS += -march=armv4t -mtune=arm9tdmi -fno-builtin -mapcs
+
+   LDFLAGS	= --cref -Bstatic -nostartfiles -T S3C2450-RAM.ld -Map 2450main.map
+   OCFLAGS = -O binary -R .note -R .comment -S
+
+   2450TEST = MDS2450.bin
+
+   %.o:%.S
+      $(CC) -c $(CFLAGS) -o $@ $<
+
+   %.o:%.c
+      $(CC) -c $(CFLAGS) -o $@ $<
+
+   all: $(2450TEST)
+
+   $(2450TEST) : $(OBJS)
+      $(LD) $(LDFLAGS) -o MDS2450 $(OBJS) $(LIBC) $(LIBGCC) \
+      -I$(LIBGCCDIR)/include -I$(LIBCDIR)/include -L$(LIBC) -L$(LIBGCCDIR) -lgcc
+
+      $(OBJCOPY) $(OCFLAGS) $(TOPDIR)/MDS2450 $(TOPDIR)/$@
+      $(OBJDUMP) -d $(TOPDIR)/MDS2450 > $(TOPDIR)/MDS2450.dis
+      cp $(TOPDIR)/$@ /tftpboot
+
+   clean:
+      rm -f *.o 
+      rm -f $(TOPDIR)/$(2450TEST)
+      rm -f $(TOPDIR)/MDS2450
+      rm -f $(TOPDIR)/2450main.map
+      
+   dep:
+      $(CC) -M $(INCLUDE) $(SRCS) $(ASRCS) > .depend
+
+   ifeq (.depend,$(wildcard .depend))
+   include .depend
+   endif					
+
+   ```
+ 
 
 
   # 어셈블리 코딩에 관하여(ARM11 기준)
@@ -276,251 +348,256 @@
 	mov	r3, #4
 	bl	HOW_TO_RETURN
    ```
-idr r3, 
 
 
-idr r3, [pc, #16]
-
-@상대 주소
-@*(ptr+16)
+  ```   
+  idr r3, 
 
 
+  idr r3, [pc, #16]
 
-
-	cmp r0,r1
-	blt L1
-	bgt L2
-	beq L3
-	b _EXIT
-
-L1:
-	mov r0,#1
-	mov pc,lr
-
-L2:
-	mov r0,#2
-	mov pc,lr
-
-L3:
-	mov r0,#3
-	mov pc,lr
-
-_EXIT:
-	mov r0,#-1
-	mov
-
-====================================================
-
-cmp r0, r1
-//비교결과에 따라서
-movlt r0,#1
-//맞으면 1 아니면 skip
-
-
-movgt r0,#2
-//맞으면 2 아니면 skip
-
-
-moveq r0,#3
-//맞으면 3 아니면 skip
-
-mov pc,lr
-=============================
-<디스어셈블 코드>
-
-30001430 <CONDITIONAL_EXECUTE>:
-30001430:	e1500001 	cmp	r0, r1
-30001434:	b3a00001 	movlt	r0, #1
-30001438:	c3a00002 	movgt	r0, #2
-3000143c:	03a00003 	moveq	r0, #3
-30001440:	e1a0f00e 	mov	pc, lr
-===============================
-모든 명령어를 lt(조건부접미사)를 사용-> 성능도잡고 코드사이즈도 잡고, 두마리 토끼
+  @상대 주소
+  @*(ptr+16)
 
 
 
-[실습결과
-=======================
 
-mov r0 r2 lsl
+    cmp r0,r1
+    blt L1
+    bgt L2
+    beq L3
+    b _EXIT
 
-<도움이 되는 지문> 책 페이지 : 
-DATA_PROCESS1:
-	/*
-	 * IMPLEMENT function for calcurate result=(a+b)- c in this location
-	 * use R3 Destination Register(Rd)
-	 * use ADD, SUB and MOV instruction : 3 line
-	 */
+  L1:
+    mov r0,#1
+    mov pc,lr
 
-	 add r0,r0,r1
-	 sub r0,r0,r2
-	 mov pc, lr	/* return */
+  L2:
+    mov r0,#2
+    mov pc,lr
 
-	/* 
-	 * unsigned long DATA_PROCESS2(unsigned long a, unsigned long b);
-	 * -----------------------------------------------------------------
-	 *    r0=a, r1=b
-	 *    The return value is result (r0)
-	 */
-	 .globl	DATA_PROCESS2
-DATA_PROCESS2:	 
-	/*
-	 * IMPLEMENT function for calcurate result=(a<<2) | (b&15) in this location
-	 * use R2 Destination Register(Rd)
-	 * use AND, ORR and MOV instruction : 3 line
-	 */
-   mov r0,r0,lsl #2
-	 and r1,r1,#15
-	 orr r0,r0,r1
-	 mov pc, lr	/* return */	
- 
-=======================
- 
-   and r2,r1,#15
-   mov r0,r0,lsl #2
-	 orr r0,r2,r0
-	 mov pc, lr	/* return */	
- =====================
- ==========================================================
+  L3:
+    mov r0,#3
+    mov pc,lr
+
+  _EXIT:
+    mov r0,#-1
+    mov
+
+  ====================================================
+
+  cmp r0, r1
+  //비교결과에 따라서
+  movlt r0,#1
+  //맞으면 1 아니면 skip
 
 
+  movgt r0,#2
+  //맞으면 2 아니면 skip
 
-#if 0
-	/* IMPLEMENT the function for calcurate result=(a+b)-c */
-{
-	int a,b,c;
-	int result;
-	
-	a = 11;
-	b = 22;
-	c = 30;
-	Uart_Printf("Calcurate [(%d+%d)-%d] ",a,b,c);
-	result = DATA_PROCESS1(a,b,c);
-	Uart_Printf("=> Result is %d (must 3)\n",result);	
-}
-#endif
 
-#if 1
-	/* IMPLEMENT the function for calcurate result=(a<<2) | (b&15) */
-{
-	unsigned long a,b;
-	unsigned long result;
-	//논리 연산 실습 : result=(a<<2) | (b&15)
-	a = 0x10;
-	b = 0x33;
-	/*
-	 * unsigned long function(a,b)
-	 */
-	Uart_Printf("Calcurate [(0x%08x << 2) | (0x%08x & 15)] \n",a,b);	
-	result = DATA_PROCESS2(a,b);
-	Uart_Printf("   => Result is 0x%08x (must 0x00000043)\n",result);	
-}
-#endif
+  moveq r0,#3
+  //맞으면 3 아니면 skip
 
-===============
-if( !(status^0x1234))
-if(staus = 0x1234)
-===============
-1.
-mvneq r1,#@ @0xffffffff(해결가능)
-mveq rq,0xffffff(문법오류)
+  mov pc,lr
+  =============================
+  <디스어셈블 코드>
 
-2.mvneq r1,#@ @0xff(해결가능) 
- = 0xffffff00 :: 으로 대체 가능
-
-=======================
+  30001430 <CONDITIONAL_EXECUTE>:
+  30001430:	e1500001 	cmp	r0, r1
+  30001434:	b3a00001 	movlt	r0, #1
+  30001438:	c3a00002 	movgt	r0, #2
+  3000143c:	03a00003 	moveq	r0, #3
+  30001440:	e1a0f00e 	mov	pc, lr
+  ===============================
+  모든 명령어를 lt(조건부접미사)를 사용-> 성능도잡고 코드사이즈도 잡고, 두마리 토끼
 
 
 
-	 .globl	DATA_PROCESS2
-DATA_PROCESS2:	 
-	/*
-	 * IMPLEMENT function for calcurate result=(a<<2) | (b&15) in this location
-	 * use R2 Destination Register(Rd)
-	 * use AND, ORR and MOV instruction : 3 line
-	 */
-   mov r0,r0,lsl #2
-	 and r1,r1,#15
-	 orr r0,r0,r1
-	 mov pc, lr	/* return */	
- 
-	 mvneq r1,#0xffffff01 @(해결가능)
+  [실습결과
+  =======================
 
-   and r2,r1,#15
-   mov r0,r0,lsl #2
-	 orr r0,r2,r0
-	 mov pc, lr	/* return */	
+  mov r0 r2 lsl
+
+  <도움이 되는 지문> 책 페이지 : 
+  DATA_PROCESS1:
+    /*
+    * IMPLEMENT function for calcurate result=(a+b)- c in this location
+    * use R3 Destination Register(Rd)
+    * use ADD, SUB and MOV instruction : 3 line
+    */
+
+    add r0,r0,r1
+    sub r0,r0,r2
+    mov pc, lr	/* return */
+
+    /* 
+    * unsigned long DATA_PROCESS2(unsigned long a, unsigned long b);
+    * -----------------------------------------------------------------
+    *    r0=a, r1=b
+    *    The return value is result (r0)
+    */
+    .globl	DATA_PROCESS2
+  DATA_PROCESS2:	 
+    /*
+    * IMPLEMENT function for calcurate result=(a<<2) | (b&15) in this location
+    * use R2 Destination Register(Rd)
+    * use AND, ORR and MOV instruction : 3 line
+    */
+    mov r0,r0,lsl #2
+    and r1,r1,#15
+    orr r0,r0,r1
+    mov pc, lr	/* return */	
+  
+  =======================
+  
+    and r2,r1,#15
+    mov r0,r0,lsl #2
+    orr r0,r2,r0
+    mov pc, lr	/* return */	
+  =====================
+  ==========================================================
 
 
-디스어셈블
-300013d0 <DATA_PROCESS2>:
-300013d0:	e1a00100 	lsl	r0, r0, #2
-300013d4:	e201100f 	and	r1, r1, #15
-300013d8:	e1800001 	orr	r0, r0, r1
-300013dc:	e1a0f00e 	mov	pc, lr
-300013e0:	03a010fe 	moveq	r1, #254	; 0xfe
-300013e4:	e201200f 	and	r2, r1, #15
-300013e8:	e1a00100 	lsl	r0, r0, #2
-300013ec:	e1820000 	orr	r0, r2, r0
-300013f0:	e1a0f00e 	mov	pc, lr
 
-=============================================
+  #if 0
+    /* IMPLEMENT the function for calcurate result=(a+b)-c */
+  {
+    int a,b,c;
+    int result;
+    
+    a = 11;
+    b = 22;
+    c = 30;
+    Uart_Printf("Calcurate [(%d+%d)-%d] ",a,b,c);
+    result = DATA_PROCESS1(a,b,c);
+    Uart_Printf("=> Result is %d (must 3)\n",result);	
+  }
+  #endif
+
+  #if 1
+    /* IMPLEMENT the function for calcurate result=(a<<2) | (b&15) */
+  {
+    unsigned long a,b;
+    unsigned long result;
+    //논리 연산 실습 : result=(a<<2) | (b&15)
+    a = 0x10;
+    b = 0x33;
+    /*
+    * unsigned long function(a,b)
+    */
+    Uart_Printf("Calcurate [(0x%08x << 2) | (0x%08x & 15)] \n",a,b);	
+    result = DATA_PROCESS2(a,b);
+    Uart_Printf("   => Result is 0x%08x (must 0x00000043)\n",result);	
+  }
+  #endif
+
+  ===============
+  if( !(status^0x1234))
+  if(staus = 0x1234)
+  ===============
+  1.
+  mvneq r1,#@ @0xffffffff(해결가능)
+  mveq rq,0xffffff(문법오류)
+
+  2.mvneq r1,#@ @0xff(해결가능) 
+  = 0xffffff00 :: 으로 대체 가능
+
+  =======================
 
 
-1단계.find OP2
-2단계.operation(OP code)
-3단계.save(register write)
 
-OP코드 Rd, Rs, OP2
---------------------
-add r0,r0,#1  		@r0=r0+1
-add r0,r0,r0  		@r0=r0+r0=2r0
-add r0,r0,r0,lsl #1  		@r0=r0+2r0=3r0
-add r0,r0,r0,lsr #1  	@r0=r0+1/2r0=1.5r0
-add r0,r0,r0,asr #1  	@r0=r0+1/2r0=1.5r0(부호)
-add r0,r0,r0,lsl r1  		@r0=r0+(2^r1)*r0
-add r0,r0,r0,rrx
-================================================
+    .globl	DATA_PROCESS2
+  DATA_PROCESS2:	 
+    /*
+    * IMPLEMENT function for calcurate result=(a<<2) | (b&15) in this location
+    * use R2 Destination Register(Rd)
+    * use AND, ORR and MOV instruction : 3 line
+    */
+    mov r0,r0,lsl #2
+    and r1,r1,#15
+    orr r0,r0,r1
+    mov pc, lr	/* return */	
+  
+    mvneq r1,#0xffffff01 @(해결가능)
 
-add r0,r0,#1  		@r0=r0+1
+    and r2,r1,#15
+    mov r0,r0,lsl #2
+    orr r0,r2,r0
+    mov pc, lr	/* return */	
 
-add r0,r0,r0  		@r0=r0+r0=2r0
-// 곱셈!
-add r0,r0,r0,lsl #1  		@r0=r0+2r0=3r0
-add r0,r0,r0,lsr #1  	@r0=r0+1/2r0=1.5r0
-add r0,r0,r0,asr #1  	@r0=r0+1/2r0=1.5r0(부호)
-@>>lsr과 asr의 차이 : lsr은 논리라서 
-@>>부호있는 정수값일때 asr
 
-add r0,r0,r0,lsl r1  		@r0=r0+(2^r1)*r0
-@>>동일한 lsl이지만,레지스터 사용
+  디스어셈블
+  300013d0 <DATA_PROCESS2>:
+  300013d0:	e1a00100 	lsl	r0, r0, #2
+  300013d4:	e201100f 	and	r1, r1, #15
+  300013d8:	e1800001 	orr	r0, r0, r1
+  300013dc:	e1a0f00e 	mov	pc, lr
+  300013e0:	03a010fe 	moveq	r1, #254	; 0xfe
+  300013e4:	e201200f 	and	r2, r1, #15
+  300013e8:	e1a00100 	lsl	r0, r0, #2
+  300013ec:	e1820000 	orr	r0, r2, r0
+  300013f0:	e1a0f00e 	mov	pc, lr
 
-add r0,r0,r0,rrx
-@비트 회전 로테이트
-================================================
-<너무 큰숫자라 에러날때 mov대신 사용>
-ldr r0,=0x1230 @0xff000000//지시어, 유사명령어(.  = ) 해독
-================================================
+  =============================================
 
-MSR cpsr_fsxc, r0 : 
-@ cpsr 영역  업데이트
-MSR cr_fsxc, r0
-@ cr 영역  업데이트
-MSR c_fsxc, r0
-@ c 영역  업데이트
-MSR r_fsxc, r0
-@ r 영역  업데이트
-==========================
-disableIRQ();
-----
-  .global disableIRQ()
-disableIRQ():
-  MRS r0, cpsr
-  orr r0,r0,#0x80
-  MRS cpsr_c,r0
-  mov pc, lr
-==========================================
-EnableIRQ();
-----
-  .global EnableIRQ()
-EnableIRQ():
+
+  1단계.find OP2
+  2단계.operation(OP code)
+  3단계.save(register write)
+
+  OP코드 Rd, Rs, OP2
+  --------------------
+  add r0,r0,#1  		@r0=r0+1
+  add r0,r0,r0  		@r0=r0+r0=2r0
+  add r0,r0,r0,lsl #1  		@r0=r0+2r0=3r0
+  add r0,r0,r0,lsr #1  	@r0=r0+1/2r0=1.5r0
+  add r0,r0,r0,asr #1  	@r0=r0+1/2r0=1.5r0(부호)
+  add r0,r0,r0,lsl r1  		@r0=r0+(2^r1)*r0
+  add r0,r0,r0,rrx
+  ================================================
+
+  add r0,r0,#1  		@r0=r0+1
+
+  add r0,r0,r0  		@r0=r0+r0=2r0
+  // 곱셈!
+  add r0,r0,r0,lsl #1  		@r0=r0+2r0=3r0
+  add r0,r0,r0,lsr #1  	@r0=r0+1/2r0=1.5r0
+  add r0,r0,r0,asr #1  	@r0=r0+1/2r0=1.5r0(부호)
+  @>>lsr과 asr의 차이 : lsr은 논리라서 
+  @>>부호있는 정수값일때 asr
+
+  add r0,r0,r0,lsl r1  		@r0=r0+(2^r1)*r0
+  @>>동일한 lsl이지만,레지스터 사용
+
+  add r0,r0,r0,rrx
+  @비트 회전 로테이트
+  ================================================
+  <너무 큰숫자라 에러날때 mov대신 사용>
+  ldr r0,=0x1230 @0xff000000//지시어, 유사명령어(.  = ) 해독
+  ================================================
+
+  MSR cpsr_fsxc, r0 : 
+  @ cpsr 영역  업데이트
+  MSR cr_fsxc, r0
+  @ cr 영역  업데이트
+  MSR c_fsxc, r0
+  @ c 영역  업데이트
+  MSR r_fsxc, r0
+  @ r 영역  업데이트
+  ==========================
+  disableIRQ();
+  ----
+    .global disableIRQ()
+  disableIRQ():
+    MRS r0, cpsr
+    orr r0,r0,#0x80
+    MRS cpsr_c,r0
+    mov pc, lr
+  ==========================================
+  EnableIRQ();
+  ----
+    .global EnableIRQ()
+  EnableIRQ():
+  ```
+  - sdf
