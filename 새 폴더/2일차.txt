@@ -1,0 +1,248 @@
+idr r3, 
+
+
+idr r3, [pc, #16]
+
+@상대 주소
+@*(ptr+16)
+
+
+
+
+	cmp r0,r1
+	blt L1
+	bgt L2
+	beq L3
+	b _EXIT
+
+L1:
+	mov r0,#1
+	mov pc,lr
+
+L2:
+	mov r0,#2
+	mov pc,lr
+
+L3:
+	mov r0,#3
+	mov pc,lr
+
+_EXIT:
+	mov r0,#-1
+	mov
+
+====================================================
+
+cmp r0, r1
+//비교결과에 따라서
+movlt r0,#1
+//맞으면 1 아니면 skip
+
+
+movgt r0,#2
+//맞으면 2 아니면 skip
+
+
+moveq r0,#3
+//맞으면 3 아니면 skip
+
+mov pc,lr
+=============================
+<디스어셈블 코드>
+
+30001430 <CONDITIONAL_EXECUTE>:
+30001430:	e1500001 	cmp	r0, r1
+30001434:	b3a00001 	movlt	r0, #1
+30001438:	c3a00002 	movgt	r0, #2
+3000143c:	03a00003 	moveq	r0, #3
+30001440:	e1a0f00e 	mov	pc, lr
+===============================
+모든 명령어를 lt(조건부접미사)를 사용-> 성능도잡고 코드사이즈도 잡고, 두마리 토끼
+
+
+
+[실습결과
+=======================
+
+mov r0 r2 lsl
+
+<도움이 되는 지문> 책 페이지 : 
+DATA_PROCESS1:
+	/*
+	 * IMPLEMENT function for calcurate result=(a+b)- c in this location
+	 * use R3 Destination Register(Rd)
+	 * use ADD, SUB and MOV instruction : 3 line
+	 */
+
+	 add r0,r0,r1
+	 sub r0,r0,r2
+	 mov pc, lr	/* return */
+
+	/* 
+	 * unsigned long DATA_PROCESS2(unsigned long a, unsigned long b);
+	 * -----------------------------------------------------------------
+	 *    r0=a, r1=b
+	 *    The return value is result (r0)
+	 */
+	 .globl	DATA_PROCESS2
+DATA_PROCESS2:	 
+	/*
+	 * IMPLEMENT function for calcurate result=(a<<2) | (b&15) in this location
+	 * use R2 Destination Register(Rd)
+	 * use AND, ORR and MOV instruction : 3 line
+	 */
+   mov r0,r0,lsl #2
+	 and r1,r1,#15
+	 orr r0,r0,r1
+	 mov pc, lr	/* return */	
+ 
+=======================
+ 
+   and r2,r1,#15
+   mov r0,r0,lsl #2
+	 orr r0,r2,r0
+	 mov pc, lr	/* return */	
+ =====================
+ ==========================================================
+
+
+
+#if 0
+	/* IMPLEMENT the function for calcurate result=(a+b)-c */
+{
+	int a,b,c;
+	int result;
+	
+	a = 11;
+	b = 22;
+	c = 30;
+	Uart_Printf("Calcurate [(%d+%d)-%d] ",a,b,c);
+	result = DATA_PROCESS1(a,b,c);
+	Uart_Printf("=> Result is %d (must 3)\n",result);	
+}
+#endif
+
+#if 1
+	/* IMPLEMENT the function for calcurate result=(a<<2) | (b&15) */
+{
+	unsigned long a,b;
+	unsigned long result;
+	//논리 연산 실습 : result=(a<<2) | (b&15)
+	a = 0x10;
+	b = 0x33;
+	/*
+	 * unsigned long function(a,b)
+	 */
+	Uart_Printf("Calcurate [(0x%08x << 2) | (0x%08x & 15)] \n",a,b);	
+	result = DATA_PROCESS2(a,b);
+	Uart_Printf("   => Result is 0x%08x (must 0x00000043)\n",result);	
+}
+#endif
+
+===============
+if( !(status^0x1234))
+if(staus = 0x1234)
+===============
+1.
+mvneq r1,#@ @0xffffffff(해결가능)
+mveq rq,0xffffff(문법오류)
+
+2.mvneq r1,#@ @0xff(해결가능) 
+ = 0xffffff00 :: 으로 대체 가능
+
+=======================
+
+
+
+	 .globl	DATA_PROCESS2
+DATA_PROCESS2:	 
+	/*
+	 * IMPLEMENT function for calcurate result=(a<<2) | (b&15) in this location
+	 * use R2 Destination Register(Rd)
+	 * use AND, ORR and MOV instruction : 3 line
+	 */
+   mov r0,r0,lsl #2
+	 and r1,r1,#15
+	 orr r0,r0,r1
+	 mov pc, lr	/* return */	
+ 
+	 mvneq r1,#0xffffff01 @(해결가능)
+
+   and r2,r1,#15
+   mov r0,r0,lsl #2
+	 orr r0,r2,r0
+	 mov pc, lr	/* return */	
+
+
+디스어셈블
+300013d0 <DATA_PROCESS2>:
+300013d0:	e1a00100 	lsl	r0, r0, #2
+300013d4:	e201100f 	and	r1, r1, #15
+300013d8:	e1800001 	orr	r0, r0, r1
+300013dc:	e1a0f00e 	mov	pc, lr
+300013e0:	03a010fe 	moveq	r1, #254	; 0xfe
+300013e4:	e201200f 	and	r2, r1, #15
+300013e8:	e1a00100 	lsl	r0, r0, #2
+300013ec:	e1820000 	orr	r0, r2, r0
+300013f0:	e1a0f00e 	mov	pc, lr
+
+=============================================
+
+
+1단계.find OP2
+2단계.operation(OP code)
+3단계.save(register write)
+
+OP코드 Rd, Rs, OP2
+--------------------
+add r0,r0,#1  		@r0=r0+1
+add r0,r0,r0  		@r0=r0+r0=2r0
+add r0,r0,r0,lsl #1  		@r0=r0+2r0=3r0
+add r0,r0,r0,lsr #1  	@r0=r0+1/2r0=1.5r0
+add r0,r0,r0,asr #1  	@r0=r0+1/2r0=1.5r0(부호)
+add r0,r0,r0,lsl r1  		@r0=r0+(2^r1)*r0
+add r0,r0,r0,rrx
+================================================
+
+add r0,r0,#1  		@r0=r0+1
+
+add r0,r0,r0  		@r0=r0+r0=2r0
+// 곱셈!
+add r0,r0,r0,lsl #1  		@r0=r0+2r0=3r0
+add r0,r0,r0,lsr #1  	@r0=r0+1/2r0=1.5r0
+add r0,r0,r0,asr #1  	@r0=r0+1/2r0=1.5r0(부호)
+@>>lsr과 asr의 차이 : lsr은 논리라서 
+@>>부호있는 정수값일때 asr
+
+add r0,r0,r0,lsl r1  		@r0=r0+(2^r1)*r0
+@>>동일한 lsl이지만,레지스터 사용
+
+add r0,r0,r0,rrx
+@비트 회전 로테이트
+================================================
+<너무 큰숫자라 에러날때 mov대신 사용>
+ldr r0,=0x1230 @0xff000000//지시어, 유사명령어(.  = ) 해독
+================================================
+
+MSR cpsr_fsxc, r0 : 
+@ cpsr 영역  업데이트
+MSR cr_fsxc, r0
+@ cr 영역  업데이트
+MSR c_fsxc, r0
+@ c 영역  업데이트
+MSR r_fsxc, r0
+@ r 영역  업데이트
+==========================
+disableIRQ();
+----
+  .global disableIRQ()
+disableIRQ():
+  MRS r0, cpsr
+  orr r0,r0,#0x80
+  MRS cpsr_c,r0
+  mov pc, lr
+==========================================
+EnableIRQ();
+----
+  .global EnableIRQ()
+EnableIRQ():
