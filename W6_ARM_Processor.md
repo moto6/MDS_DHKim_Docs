@@ -275,10 +275,7 @@
     1. SP 초기위치 100c
     2. STMDB 코드실행
     3. SP 감소시켜
-  - 스텍포인터가 회피해서 쓰는 이유
-    1. 
-    2. `
-
+  
 
  
  #
@@ -663,12 +660,201 @@
   EnableIRQ():
   ```
   - 이상 어셈블리어 실습내용
-
-
-  #
-  ## 모든 ARM 명령어는 조건부 실행이 가능하다
+  - 모든 ARM 명령어는 조건부 실행이 가능하다
    - 모든 주소는 프로그램 카운터 기준 상대주소지정방식이다
      - 이를 indirect addressing 이라 한다
-    
+ #
+ ## 4일차 (캐시)
+  - 캐시의 필요성 
+    1. 시간참조의 원리 : 시간대마다 다른 지역을 쓴다
+    2. 공간참조의 원리 : 한곳의 메모리를 엑세스하면 그 주변의 메모리까지 자주 사용한다
+      - 인간들의 코딩습관과 프로그램의 일반적인 원리로부터 출발하여, 위의 구조일때 좀더 빠른 컴퓨터의 동작속도를 위해 캐시가 도입됨
+  - 캐시 관련 용어 정리
+    1. victim
+    2. i-cache
+    3. d-cache
+    4. 캐시 클린
+    5. 캐시 플러쉬
+    6. valid bit
+    7. dirty bit
+    8. 캐쉬 Tag
+    9. cache의 Hit/miss
+  - 캐쉬의 이해 이해서는 ARM의 메모리 시스템에 대한 이해가 선행되야 함.
+    1. write-bace
+    2. write through
+    3. dirty flag : 수정된 위치의 판단
+  - Cache Memory
+    1. I-Cache/D-Cache 활성화방법
+    2. Memory Mapped I/O D-Cache 비활성화: 하드웨어 레지스터는 D-Cache off
+    3. Cache Clean과 Cache Flush 
+  - MMU
+    1. 링커(Linker) 스크립트 파일에서의 주소 표현
+    2. 예외처리(Exception) 벡터 테이블
+    3. 보호된 메모리 접근 -> Data Abort
+    4. 존재하지 않는 가상 메모리 접근 -> Data Abort
+   - MPU에서 manageing 기능을 추가하면 MMU가 됨.
+   - MMU와 캐시 메모리 버스는 서로 밀접하게 연결되어있음
+   - 
 
+
+   ```
+    0x30011fcc                __TEXT_END__ = .
+    0x30011fcc                . = ALIGN (0x4)
+   ```
+ - 로케이션 포인터를 다음 섹션을 배려해서 다음 섹션이 4의 정수배를 ALIGN (0x40)-> 64바이트 정렬
+
+ - 힙의 시작과 끝
+  ```
+    /* function initializing stacks */
+  InitStacks:
+    /* Don't use DRAM,such as stmfd,ldmfd......
+    * SVCstack is initialized before
+    * Under toolkit ver 2.5, 'msr cpsr,r1' can be used instead of 'msr cpsr_cxsf,r1'
+    */
+    mrs	 r0,cpsr
+    bic	r0,r0,#Mode_MASK
+    orr	r1,r0,#Mode_UND|NOINT
+    msr	 cpsr_cxsf,r1		/* UndefMode */
+    ldr	sp,=UndefStack
     
+    orr	r1,r0,#Mode_ABT|NOINT
+    msr	 cpsr_cxsf,r1		/* AbortMode */
+    ldr	sp,=AbortStack
+
+    orr	r1,r0,#Mode_IRQ|NOINT
+    msr	 cpsr_cxsf,r1		/* IRQMode */
+    ldr	sp,=IRQStack
+      
+    orr	r1,r0,#Mode_FIQ|NOINT
+    msr	 cpsr_cxsf,r1		/* FIQMode */
+    ldr	sp,=FIQStack
+
+    orr	r1,r0,#Mode_SYS|NOINT
+    msr	 cpsr_cxsf,r1		/* SystemMode */
+    ldr	sp,=UserStack
+    
+    bic	r0,r0,#I_Bit
+    orr	r1,r0,#Mode_SVC
+    msr cpsr_cxsf,r1		/* SVCMode interrupt enable */
+    ldr	sp,=SVCStack
+    
+    /* USER mode has not be initialized. */
+    
+    mov pc,lr 
+    /* The LR register won't be valid if the current mode is not SVC mode. */
+  ```
+
+
+ - RESET 예외
+    1. POR (파워온)
+    2. HW리셋(리셋스위치 리셋)
+    3. WDT 와치독리셋
+    4. S/W리셋
+    5. PC=30000000
+ - prefetch Data abort
+    1. 비정렬 엑세스 (Data abort only)
+    2. 보호된 메모리 엑세스
+    3. 존재하지 않는 가상 메모리 엑세스
+
+  ```
+    /* macro 정의 */
+    .macro HANDLER, HandlerLabel, HandleLabel
+  \HandlerLabel:
+    sub		sp,sp,#4		/* decrement sp(to store jump address) */
+    stmfd	sp!,{r0}			/* PUSH the work register to stack(lr doesn`t push because */ 
+                  /* it return to original address) */
+    ldr		r0,=\HandleLabel	/* load the address of HandleXXX to r0 */
+    ldr		r0,[r0]         		/* load the contents(service routine start address) of HandleXXX */
+    str		r0,[sp,#4]      	/* store the contents(ISR) of HandleXXX to stack */
+    ldmfd	sp!,{r0,pc}     	/* POP the work register and pc(jump to ISR) */
+    .endm
+
+    .text
+    .globl _start
+  _start:
+
+    /* ResetHandler가 처음부터 나오는 것이 아니라 
+    * vector 주소 영역에는 reset vector가 존재해야 한다
+    * exception이 발생하면 ARM은 하드웨어적으로 다음 주소로 분기된다
+    */
+    b	ResetHandler
+    b	HandlerUndef			/* handler for Undefined mode */
+    b	HandlerSWI			/* handler for SWI interrupt */
+    b	HandlerPabort			/* handler for PAbort */
+    b	HandlerDabort			/* handler for DAbort */
+    b	.						/* reserved */
+    b	HandlerIRQ				/* handler for IRQ interrupt */
+    b	HandlerFIQ				/* handler for FIQ interrupt */
+
+    .ltorg
+  HANDLER HandlerFIQ, HandleFIQ
+  HANDLER HandlerIRQ, HandleIRQ
+  HANDLER HandlerUndef, HandleUndef
+  HANDLER HandlerSWI, HandleSWI
+  HANDLER HandlerDabort, HandleDabort
+  HANDLER HandlerPabort, HandlePabort
+  ```
+- 핸들러 등록이 꼭 필요한 이유 : 런타임에 동적으로 필요한 핸들러함수로 점프하기 위해서
+- 비정렬함수 abort->
+- FIQ 가 IRQ보다 빠르게 처리되는 이유
+1)파이프라인 파괴가 되는것을 방지 : 백터테이블의 맨 마지막에 존재하기 때문에 파이프라인을 깨트리지 않고 코딩할수 있다(그 다음줄에 코딩하면)
+2)우선순위가 IRQ보다 높다
+3)Private 한 레지스터가 5개 존재 : 푸쉬팝을 안하고 써도 되요, (stm sp!,{r8,r9} ->> 생략가능)
+
+#
+## AMBA버스 (ARM프로세서의 시스템 버스)
+ - ARM의 성공 요인중 표준BUS의 설계시스템을 공개한것이 큰 요인임
+ - 세계 유수의 반도체회사들이 자사의 IP에 연결할 수 있도록 버스 표준을 만들어 제조함. 고로 각자의 분야에 특징과 강점이 있던 반도체회사들은 ARM프로세서를 만들어 제공하는데 예를들면 
+   - 퀄컴 : 무선 및 통신
+   - TI : ADC,DAC, 전력관리, 인더스트리
+   - 삼성 : 모바일, 무선, Fab
+   - NXP : 차량용, 통신, 인더스트리 
+   - 브로드컴 : 통신
+    근데 어째 통신 아니면 인더스트리 두가지경우밖에 없는듯하다.. 이외에도 엄청나게 많은 ARM코어를 이용한 프로세서 개발하는 회사가 있으며 그것만큼이나 많은 다양한 ARM이 아닌 프로세서들이 있다.
+ - 버스와 사용클럭
+   - ARM Core : Fclk
+   - AHB : Hclk
+   - APB : Pclk
+ - PLL : Phase Lock L... : 단어가 어렵지만 단순하게 주파수를 변경해주는 물건이다(위상에맞춰서..)
+ - 상용프로세서의 접근법 : 이전까지의 내용은 상용프로세서라기 보다 ARM Core에 대한 내용이므로, 점진적으로 실사용에 가까운것들에 대하여 논하고자함.
+   - 회로도상에 DDR메모리
+   - DRAM의 CSn0
+   - 하드웨어 연결 핀이 메모리의 주소를 결정, 프로세서 설계시부터 하드웨어에 연결되는 순간부터 하드웨어의 뱅크 메모리에 연결하는 순서가 메모리의 주소로 결정 됨
+   - 메뉴얼에서 nSCSO -> SDRAM
+   - SDRAM과 DRAM의 차이 
+     1. SDRAM : Syncronos동기화된 램
+     2. DDRAM : DDR이라 불리며, Double 동기속도보다 딱 두배의 속도로 움직이는 램
+   - 사실 DRAM컨트롤러 셋팅은 너무너무 힘들어서 박사님들이 하시고 회로도도 다 Vender 제공해주는거 쓴다. 파트넘버까지 같은 RAM만 사용한다..
+#
+## 마치며
+ - 임베디드 분야 힘들다, 강사님은 임베디드 분야 개발자 -> 임베디드 강사 겸 ios 생태계 개발자로 전향하심
+ - elf파일과 bin파일의 차이는 디버깅을 할수 있는지 없는지에 대한 차이
+ - 링커 : GCC 툴체인의 마지막 단계이며 오브젝트 파일들을 합쳐 모든 코드와 데이터를 포함하는 새로운 object 파일 생성도구
+ - 링커 스크립트 : 링커가 마지막에 참고하는 스크립트 파일
+ - Startup code : ARM코어가 부팅할때 가장먼저 실행되며 시스템 초기화, Data 초기화, Stack영역 할당, Heap영역 할당, 메인함수 호출 역할을 수행
+ - ARM의 Exception 상황
+   - Reset
+   - Undefined Instruction
+   - Software Interrupt
+   - Prefetch Abort
+   - IRQ
+   - FIQ
+ - Exception Vector
+   - 예외상황이 발생했을떄, 미리 정해진 어드레스의 프로그램을 수행
+   미리 정해진 프로그램의 위치를 Exception Vector라 함
+   - ARM프로세서는 0x00~ 위치에서 시작해 increment 벡터 테이블을 둔다, 이를 로우벡터 방식이라고 한다
+   - 리눅스에서는 0xff~ 위치에서 시작해 decrement 벡터 테이블을 둔다, 이를 하이벡터 방식이라고 한다
+   - Nor Flash Booting / ROM-RAM 부팅방식은 할이야기가 많아 [Link]()
+   - 컴파일러 최적화 기능 -> makefile에서의 옵션 -O0~O3까지 있음.
+   - 최적화에서는 기본적으로 세상에 속도와 성능을 모두 잡는 최적화란 존재하지 않는다는것을 명심. Speed와 Space의 Trade-off이며, 사용자 혹은 C언어의 특정 루틴을 modify하는것이 최적화의 본질이다. 맹신은 금물!
+   - inline함수 : 성능이 향상되지만, 코드사이즈가 늘어남
+   - 스텍의 사용 : 함수의 파라미터는 4개까지만 사용하기 5개 이상부터는 레지스터가 아닌 스텍포인터에 저장하므로 서브루틴 분기(함수호출)속도가 매우 느려지게 됨
+   - 강사님 말씀
+     - 임베디드 개발자는 힘들고 고될수 있다. 임베디드 강사를 하는 본인조차 매우 힘들다.
+     - 임베디드 리눅스 특히 ARM프로세서에 관해서는 사명감과 나름의 의무감에 지속하고 있는것 뿐이며, 좋은 개발자로 성장하기를 바람
+     
+
+
+
+
+
