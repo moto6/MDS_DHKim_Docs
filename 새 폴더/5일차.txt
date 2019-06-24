@@ -1,0 +1,40 @@
+/* .rodata section which is used for read-only data (constants) */
+  .rodata :
+  {
+    __RODATA_START__ = .;
+    *(.rodata)
+    *(.rodata.*)
+    __RODATA_END__ = .;//롬 주소의 끝
+    . = ALIGN(4);    
+  }
+
+//램 주소
+  /* .data section which is used for initialized data */
+  .data :
+  {
+    __DATA_START__ = .;
+    *(.data)
+    *(.data.*)
+    __DATA_END__ = .;
+    . = ALIGN(4);
+  }  
+  
+
+==============================
+alias m='minicom -w -D/dev/ttyS0'
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+alias h='history'
+
+
+subl ~/.bashrc
+
+COLORS=purple; echo $COLORS
+주의사항 : 공백문자 줄바꿈문자 허용안됨 
+
+변수의 저장과 읽기
+  412  COLORS
+  413  COLORS=yellow
+  414  echo $COLORS
+
