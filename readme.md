@@ -1,5 +1,5 @@
-# Readme!!
- * 이 Git repo는 MDS아카데미 자율주행차 과정 수업에 대한 자료를 정리한 페이지 입니다.
+# Readme
+ * 이 깃허브 저장소는 MDS아카데미 자율주행차 과정 수업에 대한 자료를 정리한 페이지 입니다.
  * [MDS아카데미](http://www.mdsacademy.co.kr/) MDS아카데미 페이지 바로가기
  * [커리큘럼](http://www.mdsacademy.co.kr/customer/board_view.php?board_idx=1585&schField=&schWord=&search_div=notice&size=10&page=1) 커리큘럼 자세히 보기
  * [커리큘럼 mirror(190606박제)](https://github.com/our-self-driving-cars/course-resources/blob/master/metrial/%ED%95%9C%EC%BB%B4MDS%20IT%EC%9C%B5%ED%95%A9%20%EC%A0%84%EB%AC%B8%EA%B5%90%EC%9C%A1%EC%84%BC%ED%84%B0-%EC%9E%90%EC%9C%A8%EC%A3%BC%ED%96%89%20%EC%BB%A4%EB%A6%AC%ED%81%98%EB%9F%BC.pdf)
