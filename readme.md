@@ -59,30 +59,30 @@
    * [W1_C언어 자료 모음]()
  
  #
- ## 2주차 요약본 & 수업자료 Link
+ ## 2주차 요약본 & 수업자료 : Embedded specialized C Programming Laguage
    * [W2_Embedded-C 핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W2_Embedded.md)
    * [W2_MDS2450_하드웨어 셋업 정리](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W2_MDS2450_review.md)
    * [W2_MDS2450_하드웨어 자료 모음]()
  
  
- ## 3주차 요약본 & 수업자료 Link
+ ## 3주차 요약본 & 수업자료 : C++ Programming Laguage
    * [W3_이것이 C++이다 핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W3_This-Cpp.md)
    * [W3_meterial_수업자료](https://github.com/d-h-k/MDS_week_material/tree/master/W3_meterial)
  
- ## 4주차 요약본 & 수업자료 Link
+ ## 4주차 요약본 & 수업자료 : Python
    * [W4_Python(GodsofPy)핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W4_Python(GodsofPy).md)
    * [W4_Python_수업자료](https://github.com/d-h-k/MDS_week_material/tree/master/W4_Python)
  
  
- ## 5주차 요약본 & 수업자료 Link
+ ## 5주차 요약본 & 수업자료 : MDS2450 board Peri
    * [W5 MDS2450임베디드 리눅스 보드 핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W5_MDS2450.md)
    * [W5 수업자료 - 2주차]()
     
- ## 6주차 요약본 & 수업자료 Link
-   * [W6 핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W6_ARM_Processor.md)
+ ## 6주차 요약본 & 수업자료 : ARM assembly & architecture
+   * [W6 ARM assembly & architecture 핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W6_ARM_Processor.md)
    * [W6 수업자료 - 2주차]()
     
- ## 주차 요약본 & 수업자료 Link
+ ## 7주차 요약본 & 수업자료 Link
    * [W 핵심정리&요약](Link)
    * [W 수업자료](Link)
     
