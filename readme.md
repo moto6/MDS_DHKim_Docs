@@ -33,7 +33,7 @@
    * [김남우님의 마크다운 강의록 정리]()
 
  #
- ## 추가 학습 도서
+ ## 추가 학습 도서 : other repo
    * [학습 도서 리스트](https://github.com/d-h-k/My-PPAK-DOK-List/blob/master/README.md)
    
  #
