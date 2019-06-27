@@ -74,17 +74,17 @@
    * [W4_Python_수업자료](https://github.com/d-h-k/MDS_week_material/tree/master/W4_Python)
  
  
- ## 5주차 요약본 & 수업자료 : MDS2450 board Peri
+ ## 5주차 요약본 & 수업자료 : AMR based MDS2450 board Peri
    * [W5 MDS2450임베디드 리눅스 보드 핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W5_MDS2450.md)
-   * [W5 수업자료 - 2주차]()
+   * [W5 AMR based MDS2450 board Peri 수업자료]()
     
  ## 6주차 요약본 & 수업자료 : ARM assembly & architecture
    * [W6 ARM assembly & architecture 핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W6_ARM_Processor.md)
-   * [W6 수업자료 - 2주차]()
+   * [W6  ARM assembly & architecture 수업자료]()
     
- ## 7주차 요약본 & 수업자료 Link
-   * [W 핵심정리&요약](Link)
-   * [W 수업자료](Link)
+ ## 7주차 요약본 & 수업자료 : 리눅스 시스템 프로그래밍
+   * [W7 Linux System programming](Link)
+   * [W7 inux System programming 수업자료](Link)
     
  ## 주차 요약본 & 수업자료 Link
    * [W 핵심정리&요약](Link)
