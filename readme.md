@@ -82,11 +82,11 @@
    * [W6 ARM assembly & architecture 핵심정리&요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W6_ARM_Processor.md)
    * [W6  ARM assembly & architecture 수업자료]()
     
- ## 7주차 요약본 & 수업자료 : 리눅스 시스템 프로그래밍
+ ## 7주차 요약본 & 수업자료 : 리눅스 시스템 프로그래밍 순서변경
    * [W7 Linux System programming](Link)
    * [W7 inux System programming 수업자료](Link)
     
- ## 주차 요약본 & 수업자료 Link
+ ## 8주차 요약본 & 수업자료 Link 디바이스 드라이버
    * [W 핵심정리&요약](Link)
    * [W 수업자료](Link)
     
