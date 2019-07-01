@@ -4,7 +4,7 @@
 
 
  #
- ## 1일차 - AUTOSAR, V-model based process, 
+ ## 1일차 - AUTOSAR, V-모델, MBD, Tricore아키텍쳐
   - 학습목표
     1. E/E 중 소프트웨어 접목 분야에 대한 이해
     2. C언어에서 하드웨어 제어 부분 핵심요약
