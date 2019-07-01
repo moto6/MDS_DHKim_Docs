@@ -83,7 +83,7 @@
    * [W6  ARM assembly & architecture 수업자료]()
     
  ## 7주차 요약본 & 수업자료 : 리눅스 시스템 프로그래밍 순서변경
-   * [W7 Linux System programming](Link)
+   * [W7 Linux System programming](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W7_Linux%20system%20programming.md)
    * [W7 inux System programming 수업자료](Link)
     
  ## 8주차 요약본 & 수업자료 Link 디바이스 드라이버
