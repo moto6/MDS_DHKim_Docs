@@ -87,7 +87,7 @@
    * [W7 inux System programming 수업자료](Link)
     
  ## 8주차 요약본 & 수업자료 Link 디바이스 드라이버
-   * [W 핵심정리&요약](Link)
+   * [W8 Infineon ARUIX & automotive 핵심정리&요약](W8_auto.md)
    * [W 수업자료](Link)
     
  ## 주차 요약본 & 수업자료 Link
