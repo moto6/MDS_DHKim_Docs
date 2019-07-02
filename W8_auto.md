@@ -4,7 +4,7 @@
 
 
  #
- ## 1일차 - AUTOSAR, V-model based process, 
+ ## 1일차 - AUTOSAR, V-모델, MBD, Tricore아키텍쳐
   - 학습목표
     1. E/E 중 소프트웨어 접목 분야에 대한 이해
     2. C언어에서 하드웨어 제어 부분 핵심요약
@@ -31,6 +31,7 @@
     7. 파워컨섭션 경감을 위핸 내부 FSM기반의 소프트웨어
   - 자동차용 소프트웨어 개발 방법론(혹은 인증) : CMMI, 워터폴, V-model
     - V-model이 업계 대세로 자리잡음
+  - [V-모델 추가설명](https://ko.wikipedia.org/wiki/V_%EB%AA%A8%EB%8D%B8)
   - V-모델은 대략 12단계로 세분화 되며 다음과 같다
     1. 모델과 시뮬레이션
     2. 프로토타이핑
