@@ -1,6 +1,7 @@
  #
  ## W8 - Infineon ARUIX MCU 개발
   - 강사님의 담당업무 : Infineon 기술지원, Automotive software , Autosar, MCAL
+  - 이번주 학습목표 : V-cycle
 
 
  #
