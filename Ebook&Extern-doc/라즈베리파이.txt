@@ -1,0 +1,26 @@
+sudo -s;sudo apt-get update;exit
+
+라즈베리파이 한줄설치
+sudo apt-get install -y update;
+sudo apt-get install -y upgrade;
+sudo apt-get install -y vim;
+sudo apt-get install -y cmake;
+sudo apt-get install -y git;
+sudo apt-get install -y python3;
+
+- sudo apt-get install -y update;sudo apt-get install -y upgrade;sudo apt-get install -y vim;sudo apt-get install -y cmake;sudo apt-get install -y git;sudo apt-get install -y python3;
+
+
+라즈베리파이 한줄설치
+sudo apt-get -y update;
+sudo apt-get -y upgrade;
+sudo apt-get install -y pkg-config;
+sudo apt-get install -y build-essential cmake;
+sudo apt-get install -y libjpeg-dev libtiff5-dev libpng12-dev;
+sudo apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libxvidcore-dev libx264-dev libxine2-dev
+
+sudo apt-get -y update;sudo apt-get -y upgrade;sudo apt-get install -y pkg-config;sudo apt-get install -y build-essential cmake;sudo apt-get install -y libjpeg-dev libtiff5-dev libpng12-dev;sudo apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libxvidcore-dev libx264-dev libxine2-dev;
+
+
+
+$apt-get update;apt-get install samba samba-common-bin
