@@ -1,11 +1,34 @@
+ # Week9 - Linux Device Driver
+   #### 들어가기 전에 : 이 글은 제가 학습한 내용을 "이렇게 이해했습니다" 로 정리하는 문서이지 강좌글이 아닙니다. 
+ > 목차
+ >> - Day1 : 
+ >> - Day2
+ >> - Day3
+ >> - Day4
+ >> - Day5
+ #
+ ## Day1    
   - 프로세스의 상태천이 : sleep -> Weakup -> Ready -> Run
   - 펨웨어 레벨은 가상 주소가 없었어요
   - 디바이스 드라이버는 특정 주소로 다이렉트 접근 불가능- 커널 패닉상태로 빠짐
   - 리눅스 커널 메모리 보호기능, 특정주소를 다이렉트로 접근 불가능 에러발생
   - OS야 1:1 맵핑된 주소를 알려주겠니???? 
   - 이번주 디바이스 드라이버는 위 아래를 모두 아우를 수 있기 때문에
-  - 디바이스 드라이버는 커널에 속해있기 때문에 
-    ```shell
+  - 디바이스 드라이버는 커널에 속해있기 때문에 커널 컴파일을 해야 함
+  - 루트파일시스템은 : /root의 특정 Path로 이동, 압축풀기 옵션
+      - xvzf : tar파일
+      - xvjf : bin파일
+  - 리눅스 디바이스 드라이버에 대한 간단 특징들 
+     - 내용이 매우 방대함 - 뒷부분 못나갈수 있음
+     - 구인이 많은부분 - 일이 빡세긴 한데 잘하면 인정 받을 수 있음. 거의 모든 임베디드 분야에 통용되는 곳임
+     - 예를들어 사람의 마음을 찍는 프로젝트의 경우, hw->os포팅->dd구현의 순서로 프로젝트가 진행 됨
+     - 리눅스 프로젝트의 프레임 혹은 틀임. 많이 만들면 만들수록 실력이 향상 됨
+     - 함수포인터 변수와 void 형 포인터 변수 등판!
+     - 상위 영역(App영역, User영역)에서는 하드웨어를 파일로 추상화하여 바라 봄
+     - File의 동작에 관하여 4가지 동작
+       - Open, Read, Write, Close
+  - 실습 내용  
+    ```s
     root@ubuntu-vm /
     # ls
     bin    dev   initrd.img  media  proc  selinux  tmp  vmlinuz
@@ -38,28 +61,23 @@
     root@ubuntu-vm /mnt/hgfs/Data
     #
     ```
-
-    ```
+  - tar 명령어로 압축파일 풀기
+    ```s
     root@ubuntu-vm ~
     # tar xvjf arm-2010q1-202-arm-none-linux-gnueabi-i686-pc-linux-gnu.tar.bz2 
     ```
-
-
-    ```
+  - 
+    ```s
     root@ubuntu-vm ~
-    # cd kernel-mds2450-3.0.22
+    # cd kernel-mds2450-3.0.22 -> 폴더 이동
     root@ubuntu-vm ~/kernel-mds2450-3.0.22
-    # ls
-    COPYING        MAINTAINERS     arch          firmware  kernel   scripts   virt
-    CREDITS        Makefile        block         fs        lib      security
-    Documentation  Module.symvers  build_kernel  include   mm       sound
-    Kbuild         README          crypto        init      net      tools
-    Kconfig        REPORTING-BUGS  drivers       ipc       samples  usr
+    # ls -> 디렉토리 파일 리스트 출력
+    COPYING   (~생략~)   samples  usr
     root@ubuntu-vm ~/kernel-mds2450-3.0.22
-    # pwd
+    # pwd -> 디렉토리 경로 출력
     /root/kernel-mds2450-3.0.22
     root@ubuntu-vm ~/kernel-mds2450-3.0.22
-    # make mds2450_defconfig
+    # make mds2450_defconfig -> MDS2450보드 설정 파일 셋팅 ★필수★필수★
     HOSTCC  scripts/basic/fixdep
     HOSTCC  scripts/kconfig/conf.o
     HOSTCC  scripts/kconfig/zconf.tab.o
@@ -68,85 +86,69 @@
     # configuration written to .config
     #
     root@ubuntu-vm ~/kernel-mds2450-3.0.22
-    # make clean
+    # make clean -> 명령어로 파일 정리
+    root@ubuntu-vm ~/kernel-mds2450-3.0.22
+    ```
+
+    ```
+    root@ubuntu-vm ~/kernel-mds2450-3.0.22
+    # make zImage
+    make: /project/toolchain/arm-2010q1/bin/arm-none-linux-gnueabi-gcc: 명령을 찾지 못했음
+    HOSTCC  scripts/basic/fixdep
+    HOSTCC  scripts/kconfig/conf.o
+    HOSTCC  scripts/kconfig/zconf.tab.o
+    HOSTLD  scripts/kconfig/conf
+    scripts/kconfig/conf --silentoldconfig Kconfig
+    make: /project/toolchain/arm-2010q1/bin/arm-none-linux-gnueabi-gcc: 명령을 찾지 못했음
+    CHK     include/linux/version.h
+    CHK     include/generated/utsrelease.h
+    make[1]: `include/generated/mach-types.h'는 이미 갱신되었습니다.
+    CC      kernel/bounds.s
+    /bin/sh: /project/toolchain/arm-2010q1/bin/arm-none-linux-gnueabi-gcc: not found
+    make[1]: *** [kernel/bounds.s] 오류 127
+    make: *** [prepare0] 오류 2
     root@ubuntu-vm ~/kernel-mds2450-3.0.22
     # 
-
     ```
-
-```
-root@ubuntu-vm ~/kernel-mds2450-3.0.22
-# make zImage
-make: /project/toolchain/arm-2010q1/bin/arm-none-linux-gnueabi-gcc: 명령을 찾지 못했음
-  HOSTCC  scripts/basic/fixdep
-  HOSTCC  scripts/kconfig/conf.o
-  HOSTCC  scripts/kconfig/zconf.tab.o
-  HOSTLD  scripts/kconfig/conf
-scripts/kconfig/conf --silentoldconfig Kconfig
-make: /project/toolchain/arm-2010q1/bin/arm-none-linux-gnueabi-gcc: 명령을 찾지 못했음
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-make[1]: `include/generated/mach-types.h'는 이미 갱신되었습니다.
-  CC      kernel/bounds.s
-/bin/sh: /project/toolchain/arm-2010q1/bin/arm-none-linux-gnueabi-gcc: not found
-make[1]: *** [kernel/bounds.s] 오류 127
-make: *** [prepare0] 오류 2
-root@ubuntu-vm ~/kernel-mds2450-3.0.22
-# 
-
-```
- - 에러 보는 눈을 키워여되 크로스컴파일러 아구가 안맞아요 감으로 느끼는 연습을 하시란말이야
- - 고치는법 
- 1. gedit Makefile
- 2. 196라인
-   ```
-   CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
-   ```
-   - 이렇게 변경
-   ```
-   #CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
-CROSS_COMPILE	?= arm-none-linux-gnueabi-
-   ```
-
-
-
-ubuntu 컴파일러 설치과정
-1.
-2.
-3.
-4.
-5.확인과정 
-  - "arm-"입력후 tab키 
-6.
-7.
-8.
-
-```
-root@ubuntu-vm ~
-# tar xvzf kernel-mds2450-3.0.22-20140306.tar.gz 
-```
-```
-root@ubuntu-vm ~/kernel-mds2450-3.0.22
-# make mds2450_defconfig
-```
-  - ㅁㄴㅇ
-```
-root@ubuntu-vm ~/kernel-mds2450-3.0.22
-# make clean
-```
-  - zImage: 임베디드 환경에서의 리눅스 커널 실행파일 이미지
-
-
+  - 에러 보는 눈을 키워여되 크로스컴파일러 아구가 안맞아요 감으로 느끼는 연습을 하시란말이야
+  - 고치는법 : gedit Makefile 명령어로 메이크파일 변경 -> 196라인
     ```
-    root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
-    # 
+    CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+    ```
+  - 위의 파일 내용을 아래와 같이 변경
+    ```
+    #CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+    CROSS_COMPILE	?= arm-none-linux-gnueabi-
+    ```
+  - ubuntu 컴파일러 설치과정
+    1. 컴파일러(arm-linux-noni-eabi)를 압축해제하여 풀어놓기
+    2. 컴파일러 경로는 /root/arm2010q1
+    3. "source /etc/environment" 명령어 실행 : 환경변수 다시 로드
+    4. 확인과정 
+       - "arm-"입력후 tab키 눌르면 컴파일러 항목이 자동으로 달라붙어야 함
+  - 컴파일러 설정 오류 시 확인&반복해야 함
+  - TFTP 설정 진행
+    ```s
+    root@ubuntu-vm ~
+    # tar xvzf kernel-mds2450-3.0.22-20140306.tar.gz 
+    ```
+    ```s
+    root@ubuntu-vm ~/kernel-mds2450-3.0.22
+    # make mds2450_defconfig
+    ```
+    ```s
+    root@ubuntu-vm ~/kernel-mds2450-3.0.22
+    # make clean
+    ```
+    - zImage: 임베디드 환경에서의 리눅스 커널 실행파일 이미지
+    ```s
     root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
     # cd /etc/xinetd.d
     root@ubuntu-vm /etc/xinetd.d
     # gedit tftpd
     ```
-  - /etc/xinetd.d 파일 내용
-    ```
+    - /etc/xinetd.d 파일 내용
+    ```s
     service tftp
     {
         protocol = udp
@@ -159,216 +161,191 @@ root@ubuntu-vm ~/kernel-mds2450-3.0.22
         disable = no
     }
     ```
-```
-root@ubuntu-vm /etc/xinetd.d
-# mkdir /tftpboot
-root@ubuntu-vm /etc/xinetd.d
-# chmod 777 /tftpboot
-root@ubuntu-vm /etc/xinetd.d
-# /etc/init.d/xinetd restart
- * Stopping internet superserver xinetd                                  [ OK ] 
- * Starting internet superserver xinetd                                  [ OK ] 
-root@ubuntu-vm /etc/xinetd.d
-# netstat -au
-Active Internet connections (servers and established)
-Proto Recv-Q Send-Q Local Address           Foreign Address         State      
-udp        0      0 *:57255                 *:*                                
-udp        0      0 *:mdns                  *:*                                
-udp        0      0 *:41976                 *:*                                
-udp        0      0 *:nfs                   *:*                                
-udp        0      0 *:51729                 *:*                                
-udp        0      0 *:60973                 *:*                                
-udp        0      0 *:bootpc                *:*                                
-udp        0      0 *:tftp                  *:*                                
-udp        0      0 *:608                   *:*                                
-udp        0      0 *:sunrpc                *:*                                
-udp6       0      0 [::]:53158              [::]:*                             
-udp6       0      0 [::]:mdns               [::]:*                             
-root@ubuntu-vm /etc/xinetd.d
-# 
-
-```
-- 위에서 tftp 가 보이지 않는다면 분명히 오타임!!
-
-
-```
-root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
-# cp zImage /tftpboot/
-root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
-# ifconfig eth1 up 192.168.20.90 up
-root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
-# cp zImage /tftpboot/
-root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
-
-```
-
-
-이미지 업로드가 안될때는 IP 주소 확인 -> 추후에 static IP 변경 가능
-```
-# ifconfig eth1 up 192.168.20.90 up
-```
-
-리눅스 커널 업로드
-```
-tftpboot 30008000 zImage
-```
-
-- MDS2450 보드에서 프롬프트 명령
-```
-bootm 30008000
-```
-
-
-```
-bootargs=root=/dev/nfs rw nfsroot=192.168.20.90:/nfs/rootfs ip=192.168.20.246:192.168.20.90:192.168.20.1:255.255.255.0::eth0:off console=ttySAC1,115200n81
-stdin=serial
-stdout=serial
-stderr=serial
-```
-
-host 환경설정 NFS 설치
-```
-root@ubuntu-vm /etc
-# pwd
-/etc
-root@ubuntu-vm /etc
-# gedit exports 
-```
-
-gedit으로 실행시킨 exports 파일 내용 적는다
-```
-/nfs/rootfs *(rw,sync,no_root_squash,no_all_squash)
-```
-```
-root@ubuntu-vm /etc
-# gedit exports 
-root@ubuntu-vm /etc
-# /etc/init.d/nfs-kernel-server restart
-```
-
-이후 부팅과정
-```
-[teraterm]
-tftp 300800 zImage
-[host ubuntu]
-# ifconfig eth1 192.168.20.90 up
-->다운이 실행됨
-[teraterm]
-bootm 30008000
-->다운이 실행됨 혹시 rootfs를 못찾고 있다면
-[host ubuntu]
-# ifconfig eth1 192.168.20.90 up
-```
-
-
-```
-Welcome to MDS2450
-mds2450 login: root
-```
-
-- 위 과정으로 리눅스 부팅 완료!! 커널 확인을 위해서
-```
-# uname -a
-```
--확인과정 (안되는 경우를 대비하여)
-
-[host ubuntu]
-```
-root@ubuntu-vm /etc
-# gedit exports 
-```
-
-```
-/nfs/rootfs *(rw,sync,no_root_squash,no_all_squash)
-```
-- 네트워크 시스템 재부팅
-```
-root@ubuntu-vm /etc
-# /etc/init.d/nfs-kernel-server restart
-```
-- 아래와 같은 메시지 확인
-```
-root@ubuntu-vm /etc
-# /etc/init.d/nfs-kernel-server restart
- * Stopping NFS kernel daemon                                          [ OK ] 
- * Unexporting directories for NFS kernel daemon...                    [ OK ] 
- * Exporting directories for NFS kernel daemon...                             exportfs: /etc/exports [1]: Neither 'subtree_check' or 'no_subtree_check' specified for export "*:/nfs/rootfs".
-  Assuming default behaviour ('no_subtree_check').
-  NOTE: this default has changed since nfs-utils version 1.0.x
-
-                                                                       [ OK ]
- * Starting NFS kernel daemon 
-```
-
-```
-root@ubuntu-vm /nfs/rootfs
-# ls
-aaa  dev  home  linuxrc  opt   root  sbin  tmp  var
-bin  etc  lib   mnt      proc  run   sys   usr
-root@ubuntu-vm /nfs/rootfs
-# mkdir /root/module
-root@ubuntu-vm /nfs/rootfs
-# ls
-aaa  dev  home  linuxrc  opt   root  sbin  tmp  var
-bin  etc  lib   mnt      proc  run   sys   usr
-root@ubuntu-vm /nfs/rootfs
-# cd /root/module/
-root@ubuntu-vm ~/module
-# ls
-root@ubuntu-vm ~/module
-# pwd
-/root/module
-root@ubuntu-vm ~/module
-# cp /mnt/hgfs/Data/13_module.zip /root/module/
-root@ubuntu-vm ~/module
-# ls
-13_module.zip
-root@ubuntu-vm ~/module
-# ls
-13_module.zip
-root@ubuntu-vm ~/module
-# unzip 13_module.zip 
-Archive:  13_module.zip
-  inflating: .hello.ko.cmd           
-  inflating: .hello.mod.o.cmd        
-  inflating: .hello.o.cmd            
-  inflating: .hello_param.ko.cmd     
-  inflating: .hello_param.mod.o.cmd  
-  inflating: .hello_param.o.cmd      
-  inflating: .tmp_versions/hello.mod  
-  inflating: .tmp_versions/hello_param.mod  
-  inflating: hello.c                 
-  inflating: hello.ko                
-  inflating: hello.mod.c             
-  inflating: hello.mod.o             
-  inflating: hello.o                 
-  inflating: hello_param.c           
-  inflating: hello_param.ko          
-  inflating: hello_param.mod.c       
-  inflating: hello_param.mod.o       
-  inflating: hello_param.o           
-  inflating: Makefile                
- extracting: Module.symvers          
-  inflating: modules.order           
-root@ubuntu-vm ~/module
-# ls
-13_module.zip   hello.c      hello.mod.o    hello_param.ko     hello_param.o
-Makefile        hello.ko     hello.o        hello_param.mod.c  modules.order
-Module.symvers  hello.mod.c  hello_param.c  hello_param.mod.o
-root@ubuntu-vm ~/module
-# make
-make -C /root/work/embedded/linux-3.12.14 SUBDIRS=/root/module modules
-make: *** /root/work/embedded/linux-3.12.14: 그런 파일이나 디렉터리가 없습니다.  멈춤.
-make: *** [all] 오류 2
-root@ubuntu-vm ~/module
-# make clean
-make -C /root/work/embedded/linux-3.12.14 SUBDIRS=/root/module clean
-make: *** /root/work/embedded/linux-3.12.14: 그런 파일이나 디렉터리가 없습니다.  멈춤.
-make: *** [clean] 오류 2
-root@ubuntu-vm ~/module
-# gedit Makefile 
-```
- - 커널
+    - tftpboot 폴더 생성, 권한 부여, 네트워크 재부팅을 차례로 실행    
+    ```s
+    root@ubuntu-vm /etc/xinetd.d
+    # mkdir /tftpboot
+    root@ubuntu-vm /etc/xinetd.d
+    # chmod 777 /tftpboot
+    root@ubuntu-vm /etc/xinetd.d
+    # /etc/init.d/xinetd restart
+    * Stopping internet superserver xinetd                                  [ OK ] 
+    * Starting internet superserver xinetd                                  [ OK ] 
+    root@ubuntu-vm /etc/xinetd.d
+    # netstat -au
+    Active Internet connections (servers and established)
+    Proto Recv-Q Send-Q Local Address           Foreign Address         State      
+    udp        0      0 *:57255                 *:*                      
+    (중략)
+    udp        0      0 *:tftp                  *:*                      
+    (중략)
+    udp6       0      0 [::]:mdns               [::]:*                            
+    root@ubuntu-vm /etc/xinetd.d
+    ```
+ - 위에서 tftp 가 보이지 않는다면 분명히 오타, 아래 사항으로 확인가능
+    ```s
+    root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
+    # cp zImage /tftpboot/
+    root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
+    # ifconfig eth1 up 192.168.20.90 up
+    root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
+    # cp zImage /tftpboot/
+    root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
+    ```
+ - 이미지 업로드가 안될때는 IP 주소 확인 -> 추후에 static IP 변경 가능
+    ```s
+    # ifconfig eth1 up 192.168.20.90 up
+    ```
+ - 리눅스 커널 업로드
+    ```s
+    tftpboot 30008000 zImage
+    ```
+ - MDS2450 보드에서 프롬프트 명령
+    ```s
+    bootm 30008000
+    ```
+ - MDS2450 보드에서 "printenv"명령어로 보드 셋팅 출력
+    ```s
+    bootargs=root=/dev/nfs rw nfsroot=192.168.20.90:/nfs/rootfs ip=192.168.20.246:192.168.20.90:192.168.20.1:255.255.255.0::eth0:off console=ttySAC1,115200n81
+    stdin=serial
+    stdout=serial
+    stderr=serial
+    ```
+ - host 환경설정 NFS 설치
+    ```s
+    root@ubuntu-vm /etc
+    # pwd
+    /etc
+    root@ubuntu-vm /etc
+    # gedit exports 
+    ```
+ - gedit으로 실행시킨 exports 파일 내용 적는다
+    ```s
+    /nfs/rootfs *(rw,sync,no_root_squash,no_all_squash)
+    ```
+ - NFS를 위한 커널 서비스 재 실행
+    ```s
+    root@ubuntu-vm /etc
+    # gedit exports 
+    root@ubuntu-vm /etc
+    # /etc/init.d/nfs-kernel-server restart
+    ```
+ - 이후 부팅과정
+    ```s
+    [teraterm]
+    tftp 300800 zImage
+    [host ubuntu]
+    # ifconfig eth1 192.168.20.90 up
+    ->다운이 실행됨
+    [teraterm]
+    bootm 30008000
+    ->다운이 실행됨 혹시 rootfs를 못찾고 있다면
+    [host ubuntu]
+    # ifconfig eth1 192.168.20.90 up
+    ```
+ - 보드에 커널(zImage와, rootfs가 모두 업로드 되면 아래 화면을 만난다)
+    ```s
+    Welcome to MDS2450
+    mds2450 login: root
+    ```
+ - 로그인 비밀번호 : root
+ - 위 과정으로 리눅스 부팅 완료!! 커널 확인을 위해서 아래의 명령어 입력
+    ```s
+    # uname -a
+    ```
+ - 확인과정 (안되는 경우를 대비하여) - [host ubuntu]
+    ```s
+    root@ubuntu-vm /etc
+    # gedit exports 
+    ```
+    ```s
+    /nfs/rootfs *(rw,sync,no_root_squash,no_all_squash)
+    ```
+ - 네트워크 시스템 재부팅
+    ```s
+    root@ubuntu-vm /etc
+    # /etc/init.d/nfs-kernel-server restart
+    ```
+ - 아래와 같은 메시지 확인
+    ```s
+    root@ubuntu-vm /etc
+    # /etc/init.d/nfs-kernel-server restart
+    * Stopping NFS kernel daemon                                          [ OK ] 
+    * Unexporting directories for NFS kernel daemon...                    [ OK ] 
+    * Exporting directories for NFS kernel daemon...                             exportfs: /etc/exports [1]: Neither 'subtree_check' or 'no_subtree_check' specified for export "*:/nfs/rootfs".
+    Assuming default behaviour ('no_subtree_check').
+    NOTE: this default has changed since nfs-utils version 1.0.x          [ OK ]
+    * Starting NFS kernel daemon 
+    ```
+    ```s
+    root@ubuntu-vm /nfs/rootfs
+    # ls
+    aaa  dev  home  linuxrc  opt   root  sbin  tmp  var
+    bin  etc  lib   mnt      proc  run   sys   usr
+    root@ubuntu-vm /nfs/rootfs
+    # mkdir /root/module
+    root@ubuntu-vm /nfs/rootfs
+    # ls
+    aaa  dev  home  linuxrc  opt   root  sbin  tmp  var
+    bin  etc  lib   mnt      proc  run   sys   usr
+    root@ubuntu-vm /nfs/rootfs
+    # cd /root/module/
+    root@ubuntu-vm ~/module
+    # ls
+    root@ubuntu-vm ~/module
+    # pwd
+    /root/module
+    root@ubuntu-vm ~/module
+    # cp /mnt/hgfs/Data/13_module.zip /root/module/
+    root@ubuntu-vm ~/module
+    # ls
+    13_module.zip
+    root@ubuntu-vm ~/module
+    # ls
+    13_module.zip
+    root@ubuntu-vm ~/module
+    # unzip 13_module.zip 
+    Archive:  13_module.zip
+    inflating: .hello.ko.cmd           
+    inflating: .hello.mod.o.cmd        
+    inflating: .hello.o.cmd            
+    inflating: .hello_param.ko.cmd     
+    inflating: .hello_param.mod.o.cmd  
+    inflating: .hello_param.o.cmd      
+    inflating: .tmp_versions/hello.mod  
+    inflating: .tmp_versions/hello_param.mod  
+    inflating: hello.c                 
+    inflating: hello.ko                
+    inflating: hello.mod.c             
+    inflating: hello.mod.o             
+    inflating: hello.o                 
+    inflating: hello_param.c           
+    inflating: hello_param.ko          
+    inflating: hello_param.mod.c       
+    inflating: hello_param.mod.o       
+    inflating: hello_param.o           
+    inflating: Makefile                
+    extracting: Module.symvers          
+    inflating: modules.order           
+    root@ubuntu-vm ~/module
+    # ls
+    13_module.zip   hello.c      hello.mod.o    hello_param.ko     hello_param.o
+    Makefile        hello.ko     hello.o        hello_param.mod.c  modules.order
+    Module.symvers  hello.mod.c  hello_param.c  hello_param.mod.o
+    root@ubuntu-vm ~/module
+    # make
+    make -C /root/work/embedded/linux-3.12.14 SUBDIRS=/root/module modules
+    make: *** /root/work/embedded/linux-3.12.14: 그런 파일이나 디렉터리가 없습니다.  멈춤.
+    make: *** [all] 오류 2
+    root@ubuntu-vm ~/module
+    # make clean
+    make -C /root/work/embedded/linux-3.12.14 SUBDIRS=/root/module clean
+    make: *** /root/work/embedded/linux-3.12.14: 그런 파일이나 디렉터리가 없습니다.  멈춤.
+    make: *** [clean] 오류 2
+    root@ubuntu-vm ~/module
+    # gedit Makefile 
+    ```
+ - 커널 디렉토리 확인
     ```
     KDIR	:= /root/kernel-mds2450-3.0.22
     ```
