@@ -471,7 +471,284 @@
       3. Host PC에서 작업한 내용을 PC내부에서 통신없이 Target과 공유하는 nfs폴더로 이동하면, Target의 Filesystem에서 자동으로 반영됨.(매우매우 편리함)
    - TFTP - [위키 설명](https://ko.wikipedia.org/wiki/TFTP) : Trivial 된 FTP프로토콜로써, 간소화된 프로토콜이라 적은 용량과 사이즈로 구현이 간단하여 임베디드 시스템에서 파일 전송용으로 많이 사용됨
    - FTP - [위키설명](https://ko.wikipedia.org/wiki/%ED%8C%8C%EC%9D%BC_%EC%A0%84%EC%86%A1_%ED%94%84%EB%A1%9C%ED%86%A0%EC%BD%9C) : 파일 전송 프로토콜로써 널리 사용됨, 이더넷 통신 기반이다.
-- [NFS 셋팅 가이드 - 1](https://blog.naver.com/meelong0/140025104036)
-- [NFS 셋팅 가이드 - 2](http://forum.falinux.com/zbxe/index.php?mid=lecture_tip&page=118&document_srl=462347)
-- [초보자를 위한 임베디드 리눅스 학습 가이드
-](http://ebook.pldworld.com/_eBook/Embedded/embedded_guide-v1.1_html.htm)
+   - [NFS 셋팅 가이드 - 1](https://blog.naver.com/meelong0/140025104036)
+   - [NFS 셋팅 가이드 - 2](http://forum.falinux.com/zbxe/index.php?mid=lecture_tip&page=118&document_srl=462347)
+   - [초보자를 위한 임베디드 리눅스 학습 가이드](http://ebook.pldworld.com/_eBook/Embedded/embedded_guide-v1.1_html.htm)
+ #
+ ## Day 2 
+  - 리눅스를 인공위성쯤에서 큰그림을 보고 내려다봐라
+  - 어떤 역할이고 전체 시스템에서 어디쯤 위치하고 있으며, 어떤기능을 하는지 큰그림에서 작은  
+  - 대부분의 경우는 DD를 짜고, DD를 활용한 어플리케이션을 짜는 경우가 많음. 현업에 가면 DD와 APP이 별도가 아닌 하나의 개념으로 봐야 함
+  - 
+  ```s
+  root@ubuntu-vm /proc/1
+  # mknod /dev/led c 240 0
+  ```
+  - mknod : 특수 장치 파일로 커널에 등록
+  - /dev/led : 특수장치파일 생성위치
+  - c : 캐릭터 디바이스 
+  - 240 : Major number
+  - 0 : Minor number
+  - 커널은 제작되어있는데 디바이스드라이버는 그때그때
+    - 이럴때를 위해서 함수포인터를 등록해서 
+    - 함수포인터 변수, void형 포인터 변수는 투성이로 나온다!!
+  - DD가 빡센이유
+    - DMA살리기 -> 펌웨어 DD는 1비트의 예술, 오동작 혹은 Halt일어날 수 있음
+    - Timer Oneshot, AutoReload ... 
+    - 삼성 SDS다니시다가 과정에 들어오신분, 연세 60살-> 서버관리 서버확장 외국에서 성대나오고 영어가 기가막혀
+    - 삼성 보드 메뉴얼은 2450 보드 후진 영어 DD는-> 삽질이 많이 들어가는 분야, 해야될께많아
+    - 리눅스 디바이스 드라이버 유영창 저 절판, 단계별로 올라가기 좋은 책
+    - 
+  - 비특권모드에서 특권모드로는 못넘어와(23p)
+    - 
+
+```cpp
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/major.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+
+MODULE_LICENSE("GPL");
+
+static int sk_major = 0, sk_minor = 0;
+static int result;
+static dev_t sk_dev;
+
+static struct cdev sk_cdev;
+
+static int sk_register_cdev(void);
+
+/* TODO: Define Prototype of functions */
+static int sk_open(struct inode *inode, struct file *filp);
+static int sk_release(struct inode *inode, struct file *filp);
+
+/* TODO: Implementation of functions */
+static int sk_open(struct inode *inode, struct file *filp)
+{
+    printk("Device has been opened...\n");
+
+    /* H/W Initalization */
+
+    //MOD_INC_USE_COUNT;  /* for kernel 2.4 */
+
+    return 0;
+}
+
+static int sk_release(struct inode *inode, struct file *filp)
+{
+    printk("Device has been closed...\n");
+
+    return 0;
+}
+
+struct file_operations sk_fops = {
+    .open       = sk_open,
+    .release    = sk_release,
+};
+
+static int __init sk_init(void)
+{
+    printk("SK Module is up... \n");
+
+        if((result = sk_register_cdev()) < 0)
+        {
+                return result;
+        }
+
+    return 0;
+}
+
+static void __exit sk_exit(void)
+{
+    printk("The module is down...\n");
+        cdev_del(&sk_cdev);
+        unregister_chrdev_region(sk_dev, 1);
+}
+
+static int sk_register_cdev(void)
+{
+        int error;
+
+        /* allocation device number */
+        if(sk_major) {
+                sk_dev = MKDEV(sk_major, sk_minor);
+                error = register_chrdev_region(sk_dev, 1, "sk");
+                // sk_major에 0일때 ->> 
+        } else {
+                error = alloc_chrdev_region(&sk_dev, sk_minor, 1, "sk");
+                sk_major = MAJOR(sk_dev);
+                // sk_major에 0이 아닌 다른 함수로 설저정일때 ->> 
+        }
+
+        if(error < 0) {
+                printk(KERN_WARNING "sk: can't get major %d\n", sk_major);
+                return result;
+        }
+        printk("major number=%d\n", sk_major);
+
+        /* register chrdev */
+        cdev_init(&sk_cdev, &sk_fops);
+        sk_cdev.owner = THIS_MODULE;// THis 포인터
+        sk_cdev.ops = &sk_fops; // 주소를 넘겨 줘
+        error = cdev_add(&sk_cdev, sk_dev, 1);// 최종적으로 이렇게 넘겨 줘, 캐릭터 디바이스 에드
+
+        if(error)
+                printk(KERN_NOTICE "sk Register Error %d\n", error);
+
+        return 0;
+}
+
+
+
+module_init(sk_init);
+module_exit(sk_exit);
+```
+
+
+
+
+```cpp
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+
+int main(void)
+{
+    int fd;
+
+    fd = open("/dev/SK", O_RDWR);//dev sk pointing, mknod 필요!!
+    printf("fd = %d\n", fd);
+
+    if (fd<0) {
+        perror("/dev/SK error");
+        exit(-1);
+    }
+    else
+        printf("SK has been detected...\n");
+
+    getchar();
+    close(fd);
+
+    return 0;
+}
+~        
+```
+-GCC 로 컴파일하지말고 arm용 크로스 컴파일러로 
+
+```
+root@ubuntu-vm ~/open
+# ls
+02_open_release.zip  Module.symvers   modules.order  sk.ko     sk.mod.o  sk_app    sk_app_open
+Makefile             Modules.symvers  sk.c           sk.mod.c  sk.o      sk_app.c
+root@ubuntu-vm ~/open
+# file sk_app
+sk_app: ELF 32-bit LSB executable, ARM, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.16, not stripped
+root@ubuntu-vm ~/open
+# cp sk_app /nfs/rootfs/workSpace/
+root@ubuntu-vm ~/open
+# 
+
+```
+
+
+-  주목 놓치면 안되!!
+```s
+# ls
+csk.ko   sk_app
+# ./sk_app
+fd = -1
+/dev/SK error: No such file or directory
+```
+- 위 실행에서 에러가 난 이유 : 파일이 없어서 , 장치 파일로 등록이 안되있어서 오픈이 안되있다. 장치파일을 다 이런식으로  연결되어 있어
+- 아래는 해결
+```s
+# cd /workSpace/
+# ls
+sk.ko   sk_app
+# insmod sk.ko
+SK Module is up...
+major number=251
+# mknod /dev/SK c 251 0
+# ./sk
+sk.ko   sk_app
+# ./sk_app
+Device has been opened...
+fd = 3
+SK has been detected...
+```
+- mmknod란 : 
+
+- write함수 추가하려면
+```cpp
+struct file_operations sk_fops = {
+    .open       = sk_open,
+    .release    = sk_release,
+    .write      = (여기에 입력)
+};
+```
+- write함수 프레임만 맞게 짜기 시작해야됭
+- /dev/SK :  디바이스 드라이버 이름 > 만드는법
+```s
+mknod /dev/SK c 251 0
+```
+- 디바이스 드라이버는 대문자로 꼭 만들어야됭
+
+- 디바이스 드라이버를 만드는데 핑요한 구조체 : dev_t
+```cpp
+static dev_t sk_dev;
+```
+> 강사님이 핵심
+ >> - 이쪽은 모듈 요기는 스트럭쳐
+  - 장치 파일로 바꿔야 특수장치파일로 만들어줘야지 어플리케이션에서 열 수 있다.
+  - 오픈을 하면서 파일 디스크립터를 
+  - SK : 스켈렉톤, 뼈대라는 의미
+  - /dev/SK 특수 장치 파일
+
+```cpp
+static int sk_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
+{
+        char data[11];
+
+        copy_from_user(data, buf, count);
+        printk("data >>>>> = %s\n", data);
+
+        return count;
+}
+
+static int sk_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
+{
+        char data[20] = "this is read func...";
+
+        copy_to_user(buf, data, count);
+
+        return 0;
+}
+```
+
+- copy_to_user : 커널에서 유저(APP)단으로
+- copy_from_user : 
+- 디바이스 이름 : sk
+- 0이면 커널이 알아서 dev num 지정해주는것, !0 이면, 
+
+```cpp
+retn = read(fd, buf, 20); // fd°¡ °¡ž£Å°ŽÂ ÆÄÀÏ¿¡ buf¿¡Œ­ 20byte ÀÐÀœ
+```
+
+```
+retn = write(fd, buf, 10);//앱단 호출
+
+```
+
+```
+디바이스 트리란? : 커널 4.x 부터 도입된 개념으로 기존의 D.D를 좀더 쉽게 접근하고, 생성해주는 스크립트 언어
+디바이스 트리 공부를 위해서는 : 하드웨어는 라즈베리파이3, 문서는 아래 링크 참고
+```
+- [라즈베리파이 디바이스트리](https://wikidocs.net/3205)
+
+
+
+
+
+
