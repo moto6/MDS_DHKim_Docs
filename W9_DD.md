@@ -705,50 +705,245 @@ static dev_t sk_dev;
   - 오픈을 하면서 파일 디스크립터를 
   - SK : 스켈렉톤, 뼈대라는 의미
   - /dev/SK 특수 장치 파일
+   ```cpp
+   static int sk_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
+   {
+         char data[11];
 
-```cpp
-static int sk_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
-{
-        char data[11];
+         copy_from_user(data, buf, count);
+         printk("data >>>>> = %s\n", data);
 
-        copy_from_user(data, buf, count);
-        printk("data >>>>> = %s\n", data);
+         return count;
+   }
 
-        return count;
-}
+   static int sk_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
+   {
+         char data[20] = "this is read func...";
 
-static int sk_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
-{
-        char data[20] = "this is read func...";
+         copy_to_user(buf, data, count);
 
-        copy_to_user(buf, data, count);
-
-        return 0;
-}
-```
-
-- copy_to_user : 커널에서 유저(APP)단으로
-- copy_from_user : 
-- 디바이스 이름 : sk
-- 0이면 커널이 알아서 dev num 지정해주는것, !0 이면, 
-
-```cpp
-retn = read(fd, buf, 20); // fd°¡ °¡ž£Å°ŽÂ ÆÄÀÏ¿¡ buf¿¡Œ­ 20byte ÀÐÀœ
-```
-
-```
-retn = write(fd, buf, 10);//앱단 호출
-
-```
-
-```
-디바이스 트리란? : 커널 4.x 부터 도입된 개념으로 기존의 D.D를 좀더 쉽게 접근하고, 생성해주는 스크립트 언어
-디바이스 트리 공부를 위해서는 : 하드웨어는 라즈베리파이3, 문서는 아래 링크 참고
-```
+         return 0;
+   }
+   ```
+  - copy_to_user : 커널에서 유저(APP)단으로
+  - copy_from_user : 
+  - 디바이스 이름 : sk
+  - 0이면 커널이 알아서 dev num 지정해주는것, !0 이면, 
+   ```cpp
+   retn = read(fd, buf, 20); //APP에서의 syscall
+   ```
+   ```
+   retn = write(fd, buf, 10);//APP에서의 syscall
+   ```
+   ```
+   디바이스 트리란? : 커널 4.x 부터 도입된 개념으로 기존의 D.D를 좀더 쉽게 접근하고, 생성해주는 스크립트 언어
+   디바이스 트리 공부를 위해서는 : 하드웨어는 라즈베리파이3, 문서는 아래 링크 참고
+   ```
 - [라즈베리파이 디바이스트리](https://wikidocs.net/3205)
+### 과제 1
+  - 과제1 : 어플리케이션 계층에서 일차원 문자배열을 선언하고 그 주소를 read() 함수를 이용하여 커널영역으로 넘겨주면, 커널영역에서 대문자를 할당하여 copy_to_user/copy_from_user 를 사용하여 다시 응용계층으로 넘겨주면 최종적으로 어플단에서 대문자를 찍는 프로그램을 작성하시고, copy_from_user 도 적용 해보세요(소문자 찍기)
+ - 과제 못풀음 삽질하다가
+ - 구조체 과제(조별과제)
+   ```s
+   copy_to_user()/copy_from_user() 사용
+   ```
+
+  - 1차과제 test_mydrv.c
+   ```cpp
+   /* test_mydrv.c */
+   //유저 영역의 어플리케이션 코드
+   #include <stdio.h>
+   #include <stdlib.h>
+   #include <sys/types.h>
+   #include <fcntl.h>
+
+   #define MAX_BUFFER 26
+
+   char buf_in[MAX_BUFFER], buf_out[MAX_BUFFER];
+   //입력버퍼 출력버퍼 공간 생성
+
+   int main()
+   {
+   int fd,i;
+   
+   fd = open("/dev/mydrv",O_RDWR);
+   //DD오픈, mydrv_open() 함수 호출 됨
+
+   read(fd,buf_in,MAX_BUFFER);
+   //DD에서의 mydrv_read() 함수 호출됨
+   // open()에서 얻은 fd, 입력 버퍼 주소, 버퍼 크기
+   printf("buf_in = %s\n",buf_in);
+   //버퍼에 어떤 값이 채워져서 buf_in이 됨
+
+   for(i = 0;i < MAX_BUFFER;i++)
+      buf_out[i] = 'a' + i;
+   write(fd,buf_out,MAX_BUFFER);
+   //쓰기버퍼 , 파일디스크립터, 버퍼주소, 버퍼 최대길이
+   
+   close(fd);
+   //디바이스 드라이버 닫기
+   
+   return (0);
+   }
+
+   ```
+   ```cpp
+   /*
+   mydrv.c - kernel 3.0 skeleton device driver
+                  copy_to_user()
+   */
+   // 커널 영역의 디바이스 드라이버 코드
+   #include <linux/module.h>
+   #include <linux/moduleparam.h>
+   #include <linux/init.h>
+   #include <linux/kernel.h>   /* printk() */
+   #include <linux/slab.h>   /* kmalloc() */
+   #include <linux/fs.h>       /* everything... */
+   #include <linux/errno.h>    /* error codes */
+   #include <linux/types.h>    /* size_t */
+   #include <asm/uaccess.h>
+   #include <linux/kdev_t.h>
+   #include <linux/cdev.h>
+   #include <linux/device.h>
+
+   #define DEVICE_NAME "mydrv"
+   static int mydrv_major = 240;//디바이스 메이저 넘버 명시적할당
+   module_param(mydrv_major, int, 0);//모듈 파라미터.,,,>?
 
 
+   static int mydrv_open(struct inode *inode, struct file *file)
+   {//DD의 오픈함수 
+   printk("mydrv opened !!\n");
+   return 0;
+   }
+
+   static int mydrv_release(struct inode *inode, struct file *file)
+   {//DD의 클로즈 함수
+   printk("mydrv released !!\n");
+   return 0;
+   }
+
+   static ssize_t mydrv_read(struct file *filp, char __user *buf, size_t count,loff_t *f_pos)
+   {//리드함수, 파일포인터, 유저버퍼 함수포인터, 버퍼사이즈, pos받음, USER영역의 함수와 1:1매칭 되지 않음
+   char *k_buf;
+   int i;
+   // 리드함수니까 유저 영역에서 read함수가 호출 된 상황
+   k_buf = kmalloc(count,GFP_KERNEL);//멜록으로 공간 할당
+   for(i = 0 ;i < count;i++) {
+         k_buf[i] = 'A' + i;//넘겨받은 버퍼 주소 위치에다가 차례로 쓰기
+   }
+   if(copy_to_user(buf,k_buf,count)) {
+      return -EFAULT;//에러 핸들링
+   }
+   printk("mydrv_read is invoked\n");//커널 메시지 출력
+   kfree(k_buf);// 할당받은 공간 해제
+   return 0;
+
+   }
+
+   static ssize_t mydrv_write(struct file *filp,const char __user *buf, size_t count,
+                              loff_t *f_pos)
+   {
+   char *k_buf;
+   //유저 영역에서 Write함수를 호출한경우 DD에서 Write함수가 호출 되는것을 확인 함.
+   k_buf = kmalloc(count,GFP_KERNEL);//커널 맬럭으로 임시 저장공간 할당받음
+   if(copy_from_user(k_buf,buf,count)) {
+      return -EFAULT;//에러 핸들링,copy_from_user() 함수가 0이 아닌 수를 리턴하면 해당 케이스로 진입하여 에러를 반환
+   }
+   printk("k_buf = %s\n",k_buf);
+   printk("mydrv_write is invoked\n");
+   kfree(k_buf);
+   return 0;
+   }
 
 
+   /* Set up the cdev structure for a device. */
+   static void mydrv_setup_cdev(struct cdev *dev, int minor,
+         struct file_operations *fops)
+   {
+      int err, devno = MKDEV(mydrv_major, minor);//devno 번호에 
+      
+      cdev_init(dev, fops);
+      dev->owner = THIS_MODULE;
+      dev->ops = fops;
+      err = cdev_add (dev, devno, 1);
+      
+      if (err)
+         printk (KERN_NOTICE "Error %d adding mydrv%d", err, minor);
+   }
 
+
+   static struct file_operations mydrv_fops = {
+      .owner    = THIS_MODULE,
+         .read	  = mydrv_read,
+      .write    = mydrv_write,
+      .open     = mydrv_open,
+      .release  = mydrv_release,
+   };
+
+   #define MAX_MYDRV_DEV 1
+
+   static struct cdev MydrvDevs[MAX_MYDRV_DEV];
+
+   static int mydrv_init(void)
+   {// DD 이니셜라이즈 함수
+      int result;
+      dev_t dev = MKDEV(mydrv_major, 0);//MKDEV()는 시스템 함수
+      //dev_t 구조체 변수 이름 dev에다가 MKDEV() 리턴 값 대입
+      
+      /* Figure out our device number. */
+      if (mydrv_major)//mydrv_major!=0 인경우, 디바이스넘버 명시한경우 In case
+         result = register_chrdev_region(dev, 1, DEVICE_NAME);//시스템 함수 호출
+      else {//디바이스 넘버 명시하지 않은경우 
+         result = alloc_chrdev_region(&dev,0, 1, DEVICE_NAME);//시스템 함수 호출
+         mydrv_major = MAJOR(dev);//시스템 함수 호출해서 번호 할당
+      }
+      if (result < 0) {//에러 핸들링
+         printk(KERN_WARNING "mydrv: unable to get major %d\n", mydrv_major);
+         return result;
+      }
+      if (mydrv_major == 0)
+         mydrv_major = result;
+
+      mydrv_setup_cdev(MydrvDevs,0, &mydrv_fops);//이 함수는 User함수
+      printk("mydrv_init done\n");	
+      return 0;
+   }
+
+   static void mydrv_exit(void)
+   {
+      cdev_del(MydrvDevs);
+      unregister_chrdev_region(MKDEV(mydrv_major, 0), 1);
+      printk("mydrv_exit done\n");
+   }
+
+   module_init(mydrv_init);
+   module_exit(mydrv_exit);
+
+   MODULE_LICENSE("Dual BSD/GPL");
+   ```
+
+### 과제2
+ - 과제2 : 응용프로그램이 보내준 아래 구조체 형식의 데이터를 드라이버가 받아서 출력시키고 드라이버는 같은 구조체 형식으로 또 다른 데이터를 응용프로그램에게 보내주고 응용프로그램이 출력시키는 코드를 구현하세요
+   ```cpp
+   /*  구조체 포맷  */
+   typedef struct
+   {
+      int age;  //나이 :35
+      char name[30];// 이름 : HONG KILDONG
+      char address[20]; // 주소 : SUWON CITY
+      int  phone_number; // 전화번호 : 1234
+      char depart[20]; // 부서 : mds
+   } __attribute__ ((packed)) mydrv_data;
+
+   //   sprintf(k_buf->name,"HONG KILDONG");
+   ```
+ - copy to user 
+    1. APP 영역에서의 write함수 호출
+    2. DD에서 -> struct file operations 에서 등록 : wrtie = sk_write
+    3. 안적었음.. 뭦;
+  - attriibute Packed : 구조체 peding bytes 제거하는 예약 키워드  
+  
+
+- [리눅스 공부 - 임베디드 홀릭님 카페북](https://cafe.naver.com/lazydigital/book5089864/8630)
 
