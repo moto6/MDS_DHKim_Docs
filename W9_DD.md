@@ -942,8 +942,483 @@ static dev_t sk_dev;
     1. APP 영역에서의 write함수 호출
     2. DD에서 -> struct file operations 에서 등록 : wrtie = sk_write
     3. 안적었음.. 뭦;
-  - attriibute Packed : 구조체 peding bytes 제거하는 예약 키워드  
+ - attriibute Packed : 구조체 peding bytes 제거하는 예약 키워드  
+ - [리눅스 공부 - 임베디드 홀릭님 카페북](https://cafe.naver.com/lazydigital/book5089864/8630)
+
+#
+## 3일차
+ - DD프로그래밍 핵심
+   1. ㅇㅇ
+   2. 
+   3. 디바이스드라이버는 커널 프로그래밍 -> DD는 조금만 잘못해도 커널 패닉이 
+   4. 커널패닉은 매우 위험, 커널 프로그래밍은 
+ - 강조 점 fileops. 함수포인터가 늘어나고 있어요
+ - volatile 의미 두가지
+   1. 최적화 하지마라
+   2. 캐시에서 읽지 말고 메모리에서 읽어와라
+
+   ```s
+   # cat /proc/devices
+   Character devices:
+   1 mem
+   2 pty
+   3 ttyp
+   4 /dev/vc/0
+   4 tty
+   4 ttyS
+   5 /dev/tty
+   5 /dev/console
+   5 /dev/ptmx
+   7 vcs
+   10 misc
+   13 input
+   21 sg
+   29 fb
+   67 mds2450-kscan
+   81 video4linux
+   86 ch
+   90 mtd
+   108 ppp
+   116 alsa
+   128 ptm
+   136 pts
+   180 usb
+   188 ttyUSB
+   189 usb_device
+   204 ttySAC
+   216 rfcomm
+   251 sk
+   252 BaseRemoteCtl
+   253 usbmon
+   254 rtc
+
+   Block devices:
+   1 ramdisk
+   259 blkext
+   7 loop
+   8 sd
+   31 mtdblock
+   65 sd
+   66 sd
+   67 sd
+   68 sd
+   69 sd
+   70 sd
+   71 sd
+   128 sd
+   129 sd
+   130 sd
+   131 sd
+   132 sd
+   133 sd
+   134 sd
+   135 sd
+   179 mmc
+   #
+   ```
+- 3일차 : ictol_mydrv.h
+```cpp
+#ifndef _IOCTL_MYDRV_H_
+#define _IOCTL_MYDRV_H_
+//헤더파일용 선언
+
+#define IOCTL_MAGIC    254
+//매직넘버..?
+
+typedef struct
+{
+	unsigned char data[26];	
+} __attribute__ ((packed)) ioctl_buf;
+//구조체가 담고있는것 캐릭터배열 26개짜리 왜 근데 계속 26개냐
+
+
+#define IOCTL_MYDRV_TEST           _IO(  IOCTL_MAGIC, 0 )
+#define IOCTL_MYDRV_READ           _IOR( IOCTL_MAGIC, 1 , ioctl_buf )
+#define IOCTL_MYDRV_WRITE          _IOW( IOCTL_MAGIC, 2 , ioctl_buf )
+#define IOCTL_MYDRV_WRITE_READ     _IOWR( IOCTL_MAGIC, 3 , ioctl_buf )
+
+#define IOCTL_MAXNR                   4
+
+#endif // _IOCTL_MYDRV_H_
+```
+- 위 파일은 디바이스드라이버를 짤대 정말 많이 등장 강사님 시간많이투자
+- 어려울껀 없고 금방 하세요
+- 3개를 봐야함  
+  1. 
+  2. 
+  3. 
+- 매직넘버는 알아서 줘도됨
+```cpp
+
+  ioctl(fd,IOCTL_MYDRV_TEST);
   
+  ioctl(fd, IOCTL_MYDRV_READ, buf_in );
+```
+```cpp
 
-- [리눅스 공부 - 임베디드 홀릭님 카페북](https://cafe.naver.com/lazydigital/book5089864/8630)
+```
+  - 어바웃 포팅
+     - 창호형이 리눅스 포팅을 하기로 했어
+     - 삼성에서 chip과 보드를 같이 출시를 해 (데모)
+     - 왠만큼 소스와 회로 오픈해줘 - 업체에서 가져다가 모디파이해서 만들면 됭
 
+-
+- 오늘의 버그 증상 : DD가 첫회만 잘 돈다.. 첫번째 부팅 후 정상동작 확인한 다음에 모듈을 내렸다가 다시 올리려고 하면 해당 메시지 발생함.
+```s
+# insmod hello.ko
+Hello DD world !!
+IRQ_EINT3 failed to request external interrupt.
+insmod: can't insert 'hello.ko': unknown symbol in module, or unknown parameter
+#
+```
+- APP 코드
+   ```cpp
+   /* test_mydrv.c */
+
+   #include <stdio.h>
+   #include <stdlib.h>
+   #include <sys/types.h>
+   #include <fcntl.h>
+
+   #define MAX_BUFFER 26
+   char buf_in[MAX_BUFFER], buf_out[MAX_BUFFER];
+
+   int main()
+   {
+   int fd,i,mode;
+   
+   fd = open("/dev/mydrv",O_RDWR);
+   printf("fd = %d\n",fd);
+
+   if(fd == -1) {
+      printf("you are fail to open div files, if you success ...\n");
+      printf("mknod /dev/mydrv c 240 0\n");
+      exit(1);
+   }
+
+   printf("APP : Read Func\n");
+   read(fd,buf_in,MAX_BUFFER);
+   printf("APP : Read() -> buf_in = %s\n",buf_in);
+   
+
+   printf("APP : Write Func\n");
+   for(i = 0;i < MAX_BUFFER;i++)
+      buf_out[i] = 'a' + i;
+   write(fd,buf_out,MAX_BUFFER);
+   printf("APP : END Defalut DEMO\n");
+
+
+   printf("APP : start while demo\n");
+   printf("APP : \n");
+   strcpy(buf_out,"I'm Application\n");
+   write(fd,buf_out,MAX_BUFFER);
+
+   close(fd);
+   return (0);
+   }
+
+   ```
+   - DD 코드
+   ```cpp
+   #include <linux/module.h>	/* Needed by all modules */
+   #include <linux/kernel.h>	/* Needed for KERN_INFO	*/
+   #include <linux/init.h>		/* Needed for the macros */
+   #include <linux/kdev_t.h>
+   #include <linux/cdev.h>
+   #include <linux/errno.h>
+   #include <linux/slab.h>
+   #include <linux/delay.h>
+   #include <linux/interrupt.h>
+   #include <linux/device.h>
+   #include <linux/fs.h>       /* everything... */
+   #include <linux/types.h>    /* size_t */
+
+   #include <asm/io.h>
+   #include <asm/irq.h>
+   #include <asm/uaccess.h>
+
+   #include <mach/gpio.h>
+   #include <mach/regs-gpio.h>
+   #include <plat/gpio-cfg.h>
+
+
+   #define	DRIVER_AUTHOR	"DHKim of southkorea"
+   #define	DRIVER_DESC		"DHKim sample DD"
+   #define DRV_NAME        "mydrv"
+   #define DEVICE_NAME 	"mydrv"
+   #define MAX_MYDRV_DEV 1
+
+   static int mydrv_major = 240;
+   module_param(mydrv_major, int, 0);
+
+
+   //from NCH.. jubjub!
+   static char DDin_buf[50];
+   static char DDout_buf[50];
+
+   //
+   static void mydrv_setup_cdev(struct cdev *dev, int minor,struct file_operations *fops);
+
+   //
+   static int mydrv_open(struct inode *inode, struct file *file)
+   {
+   printk("DHKim DD.drv opened !!\n");
+   return 0;
+   }
+
+   static int mydrv_release(struct inode *inode, struct file *file)
+   {
+   printk("DHKim D.drv released !!\n");
+   return 0;
+   }
+
+
+   static ssize_t mydrv_read(struct file *filp, char __user *buf, size_t count,
+                  loff_t *f_pos)
+   {
+   char *k_buf;
+   int i;
+      printk("read in func\n");
+
+   k_buf = kmalloc(count,GFP_KERNEL);
+   for(i = 0 ;i < count;i++)
+         k_buf[i] = 'A' + i;
+   
+   if(copy_to_user(buf,k_buf,count)) {
+      return -EFAULT;
+   }
+   printk("read is invoked in kerneland HEAP\n");
+   
+   if(copy_to_user(buf, DDout_buf, count)) {
+      return -EFAULT;
+   }
+   printk("success cpy2u() ->> DDout_buf");
+
+   kfree(k_buf);
+   return 0;
+
+   }
+
+   static ssize_t mydrv_write(struct file *filp,const char __user *buf, size_t count,
+                              loff_t *f_pos)
+   {
+   char *k_buf;
+   printk("write in func\n");
+
+   k_buf = kmalloc(count,GFP_KERNEL);
+   if(copy_from_user(k_buf,buf,count)) {
+      return -EFAULT;
+   }
+   printk("k_buf = %s\n",k_buf);
+   printk("write is invoked\n");
+   
+   if(copy_from_user(DDin_buf, buf, count)) {
+      return -EFAULT;
+   }
+   printk("copy_from_user() func success ->>DDin_buf");
+   kfree(k_buf);
+   return 0;
+   }
+
+
+   static irqreturn_t keyinterrupt_func1(int irq, void *dev_id, struct pt_regs *resgs)
+   {
+         printk("Key 0 pressed!!!(%d)\n",irq);
+         printk("KDD : %s",DDin_buf);
+         return IRQ_HANDLED;
+   }
+
+   static irqreturn_t keyinterrupt_func2(int irq, void *dev_id, struct pt_regs *resgs)
+   {
+         printk("Key 1 pressed!!!(%d)\n",irq);
+         return IRQ_HANDLED;
+   }
+
+   static irqreturn_t keyinterrupt_func_mls(int irq, void *dev_id, struct pt_regs *resgs)
+   {		//GPG2,3,4,5,6 =>> 5 keys
+         //printk("Key (%d) pressed!!!\n",irq);
+         switch(irq)
+         {
+            case 18 ://in case of SW4,9
+               printk("in case of SW4,9\n");
+               break;
+            case 19 ://in case of SW5,10
+               printk("in case of SW5,10\n");
+               break;
+            case 48 ://in case of SW6,11
+               printk("in case of SW6,11\n");
+               break;
+            case 49 ://in case of SW7,12
+               printk("in case of SW7,12\n");
+               break;
+            case 50 ://in case of SW8,13
+               printk("in case of SW8,13\n");
+               break;
+         }
+
+
+         return IRQ_HANDLED;
+   }
+   /*
+   //how to solv this 10 keys problem
+   1.GPF7,GPG0 set 0(Low) -> every 10 key recognize btn
+   2.if btn is pushh ->> through in case of inerrput
+   3.for ex case 18, ->> 
+   4.1. up 5 keys
+   rGPFDAT &= ~(0x1<<7);   //Clear GPF7
+   rGPGDAT |= (0x1);       //Set GPG0
+   4.2 down 5 key
+   rGPFDAT |= (0x1<<7);    //Set GPF7
+   rGPGDAT &= ~(0x1);      //Clear GPG0
+   5. each row(colum?), set port GPIO, NOT EXINT
+   6. Read GPIO (decision Making) up or down
+   7. save exect key 
+   8. recover every key interrupt mode
+   9. return exect key (swq about no.7)
+   */
+   static void mydrv_setup_cdev(struct cdev *dev, int minor,
+         struct file_operations *fops)
+   {
+      int err, devno = MKDEV(mydrv_major, minor);
+      
+      cdev_init(dev, fops);
+      dev->owner = THIS_MODULE;
+      dev->ops = fops;
+      err = cdev_add (dev, devno, 1);
+      
+      if (err)
+         printk (KERN_NOTICE "Error %d adding mydrv%d", err, minor);
+   }
+
+
+   /***********************************************
+   ************************************************
+   ************************************************
+   ***********************************************/
+   static struct file_operations mydrv_fops = {
+      .owner   = THIS_MODULE,
+         .open    = mydrv_open,
+      .read	 = mydrv_read,
+      .write   = mydrv_write,
+      .release = mydrv_release,
+   };
+
+
+   static struct cdev MydrvDevs[MAX_MYDRV_DEV];
+
+   static int __init init(void)
+   {
+      int result;
+      int ret;
+      dev_t dev = MKDEV(mydrv_major, 0);
+      //=section of inerterupt=======================================================================
+      printk(KERN_INFO "Hello DD world !!\n");
+            ///*
+         // set Interrupt mode
+         s3c_gpio_cfgpin(S3C2410_GPF(0), S3C_GPIO_SFN(2));
+         s3c_gpio_cfgpin(S3C2410_GPF(1), S3C_GPIO_SFN(2));
+         s3c_gpio_cfgpin(S3C2410_GPF(2), S3C_GPIO_SFN(2));
+         s3c_gpio_cfgpin(S3C2410_GPF(3), S3C_GPIO_SFN(2));
+         s3c_gpio_cfgpin(S3C2410_GPF(4), S3C_GPIO_SFN(2));
+         s3c_gpio_cfgpin(S3C2410_GPF(5), S3C_GPIO_SFN(2));
+         s3c_gpio_cfgpin(S3C2410_GPF(6), S3C_GPIO_SFN(2));
+
+         if(request_irq(IRQ_EINT0,(void *)keyinterrupt_func1,IRQF_DISABLED|IRQF_TRIGGER_FALLING, DRV_NAME, NULL))
+         {
+                  printk("IRQ_EINT0 failed to request external interrupt.\n");
+                  ret = -ENOENT;
+                  return ret;
+         }
+
+         if(request_irq(IRQ_EINT1, (void *)keyinterrupt_func2,IRQF_DISABLED|IRQF_TRIGGER_FALLING, DRV_NAME, NULL)) 
+         {
+                  printk("IRQ_EINT1 failed to request external interrupt.\n");
+                  ret = -ENOENT;
+                  return ret;
+         }
+
+         if(request_irq(IRQ_EINT2, (void *)keyinterrupt_func_mls,IRQF_DISABLED|IRQF_TRIGGER_FALLING, DRV_NAME, NULL)) 
+         {
+                  printk("IRQ_EINT2 failed to request external interrupt.\n");
+                  ret = -ENOENT;
+                  return ret;
+         }
+
+         if(request_irq(IRQ_EINT3, (void *)keyinterrupt_func_mls,IRQF_DISABLED|IRQF_TRIGGER_FALLING, DRV_NAME, NULL)) 
+         {
+                  printk("IRQ_EINT3 failed to request external interrupt.\n");
+                  ret = -ENOENT;
+                  return ret;
+         }
+
+         if(request_irq(IRQ_EINT4, (void *)keyinterrupt_func_mls,IRQF_DISABLED|IRQF_TRIGGER_FALLING, DRV_NAME, NULL)) 
+         {
+                  printk("IRQ_EINT4 failed to request external interrupt.\n");
+                  ret = -ENOENT;
+                  return ret;
+         }
+
+         if(request_irq(IRQ_EINT5, (void *)keyinterrupt_func_mls,IRQF_DISABLED|IRQF_TRIGGER_FALLING, DRV_NAME, NULL)) 
+         {
+                  printk("IRQ_EINT5 failed to request external interrupt.\n");
+                  ret = -ENOENT;
+                  return ret;
+         }
+
+         if(request_irq(IRQ_EINT6, (void *)keyinterrupt_func_mls,IRQF_DISABLED|IRQF_TRIGGER_FALLING, DRV_NAME, NULL)) 
+         {
+                  printk("IRQ_EINT6 failed to request external interrupt.\n");
+                  ret = -ENOENT;
+                  return ret;
+         }
+
+         printk(KERN_INFO "%s successfully intq loaded\n", DRV_NAME);
+         //*/
+      //=section of inerterupt=======================================================================
+      printk("This Module major number : 240\n");
+      if (mydrv_major)
+         result = register_chrdev_region(dev, 1, DEVICE_NAME);
+      else {
+         result = alloc_chrdev_region(&dev,0, 1, DEVICE_NAME);
+         mydrv_major = MAJOR(dev);
+      }
+      if (result < 0) {
+         printk(KERN_WARNING "mydrv: unable to get major %d\n", mydrv_major);
+         return result;
+      }
+      if (mydrv_major == 0)
+         mydrv_major = result;
+
+      mydrv_setup_cdev(MydrvDevs,0, &mydrv_fops);
+      printk("Hello.ko module init done\n");	
+
+      return 0;
+   }
+
+   static void __exit cleanup(void)
+   {
+      cdev_del(MydrvDevs);
+      unregister_chrdev_region(MKDEV(mydrv_major, 0), 1);
+      printk("hello.ko DD module exit done\n");
+      //=====================================================
+      ///*
+      printk(KERN_INFO "Goodbye, world 4.\n");
+      free_irq(IRQ_EINT0, NULL);
+      free_irq(IRQ_EINT1, NULL);
+      free_irq(IRQ_EINT2, NULL);
+      //free_irq(IRQ_EINT3, NULL);
+      //free_irq(IRQ_EINT4, NULL);
+      //free_irq(IRQ_EINT5, NULL);
+      printk(KERN_INFO "%s successfully removed\n", DRV_NAME);
+      //*/
+   }
+
+   module_init(init);
+   module_exit(cleanup);
+   /* Get rid of taint message by declaring code as GPL. */
+   MODULE_LICENSE("GPL");
+   MODULE_AUTHOR(DRIVER_AUTHOR);		/* Who wrote this module? */
+   MODULE_DESCRIPTION(DRIVER_DESC);	/* What does this module do */
+   MODULE_SUPPORTED_DEVICE("testdevice");
+
+   ```
