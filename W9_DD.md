@@ -479,7 +479,7 @@
   - 리눅스를 인공위성쯤에서 큰그림을 보고 내려다봐라
   - 어떤 역할이고 전체 시스템에서 어디쯤 위치하고 있으며, 어떤기능을 하는지 큰그림에서 작은  
   - 대부분의 경우는 DD를 짜고, DD를 활용한 어플리케이션을 짜는 경우가 많음. 현업에 가면 DD와 APP이 별도가 아닌 하나의 개념으로 봐야 함
-  - 
+  - 커널 모듈 제작시, 커널컴파일을 안한 소스를 Makefile의 KDIR에 등록하면 안만들어짐, 커널 컴파일을 하며 생성되는 많은 파일들이 필요함.
   ```s
   root@ubuntu-vm /proc/1
   # mknod /dev/led c 240 0
@@ -498,187 +498,183 @@
     - 삼성 SDS다니시다가 과정에 들어오신분, 연세 60살-> 서버관리 서버확장 외국에서 성대나오고 영어가 기가막혀
     - 삼성 보드 메뉴얼은 2450 보드 후진 영어 DD는-> 삽질이 많이 들어가는 분야, 해야될께많아
     - 리눅스 디바이스 드라이버 유영창 저 절판, 단계별로 올라가기 좋은 책
-    - 
-  - 비특권모드에서 특권모드로는 못넘어와(23p)
-    - 
+    - 비특권모드에서 특권모드로는 못넘어와(23p)
+  > 아래 소스는 DD의 기본 골격이 되는 SK(스켈레톤) 소스
+  - KDD 소스 코드
+      ```cpp
+      #include <linux/module.h>
+      #include <linux/init.h>
+      #include <linux/major.h>
+      #include <linux/fs.h>
+      #include <linux/cdev.h>
 
-```cpp
-#include <linux/module.h>
-#include <linux/init.h>
-#include <linux/major.h>
-#include <linux/fs.h>
-#include <linux/cdev.h>
+      MODULE_LICENSE("GPL");
 
-MODULE_LICENSE("GPL");
+      static int sk_major = 0, sk_minor = 0;
+      static int result;
+      static dev_t sk_dev;
 
-static int sk_major = 0, sk_minor = 0;
-static int result;
-static dev_t sk_dev;
+      static struct cdev sk_cdev;
 
-static struct cdev sk_cdev;
+      static int sk_register_cdev(void);
 
-static int sk_register_cdev(void);
+      /* TODO: Define Prototype of functions */
+      static int sk_open(struct inode *inode, struct file *filp);
+      static int sk_release(struct inode *inode, struct file *filp);
 
-/* TODO: Define Prototype of functions */
-static int sk_open(struct inode *inode, struct file *filp);
-static int sk_release(struct inode *inode, struct file *filp);
+      /* TODO: Implementation of functions */
+      static int sk_open(struct inode *inode, struct file *filp)
+      {
+         printk("Device has been opened...\n");
 
-/* TODO: Implementation of functions */
-static int sk_open(struct inode *inode, struct file *filp)
-{
-    printk("Device has been opened...\n");
+         /* H/W Initalization */
 
-    /* H/W Initalization */
+         //MOD_INC_USE_COUNT;  /* for kernel 2.4 */
 
-    //MOD_INC_USE_COUNT;  /* for kernel 2.4 */
+         return 0;
+      }
 
-    return 0;
-}
+      static int sk_release(struct inode *inode, struct file *filp)
+      {
+         printk("Device has been closed...\n");
 
-static int sk_release(struct inode *inode, struct file *filp)
-{
-    printk("Device has been closed...\n");
+         return 0;
+      }
 
-    return 0;
-}
+      struct file_operations sk_fops = {
+         .open       = sk_open,
+         .release    = sk_release,
+      };
 
-struct file_operations sk_fops = {
-    .open       = sk_open,
-    .release    = sk_release,
-};
+      static int __init sk_init(void)
+      {
+         printk("SK Module is up... \n");
 
-static int __init sk_init(void)
-{
-    printk("SK Module is up... \n");
+            if((result = sk_register_cdev()) < 0)
+            {
+                     return result;
+            }
 
-        if((result = sk_register_cdev()) < 0)
-        {
-                return result;
-        }
+         return 0;
+      }
 
-    return 0;
-}
+      static void __exit sk_exit(void)
+      {
+         printk("The module is down...\n");
+            cdev_del(&sk_cdev);
+            unregister_chrdev_region(sk_dev, 1);
+      }
 
-static void __exit sk_exit(void)
-{
-    printk("The module is down...\n");
-        cdev_del(&sk_cdev);
-        unregister_chrdev_region(sk_dev, 1);
-}
+      static int sk_register_cdev(void)
+      {
+            int error;
 
-static int sk_register_cdev(void)
-{
-        int error;
+            /* allocation device number */
+            if(sk_major) {
+                     sk_dev = MKDEV(sk_major, sk_minor);
+                     error = register_chrdev_region(sk_dev, 1, "sk");
+                     // sk_major에 0일때 ->> 
+            } else {
+                     error = alloc_chrdev_region(&sk_dev, sk_minor, 1, "sk");
+                     sk_major = MAJOR(sk_dev);
+                     // sk_major에 0이 아닌 다른 함수로 설저정일때 ->> 
+            }
 
-        /* allocation device number */
-        if(sk_major) {
-                sk_dev = MKDEV(sk_major, sk_minor);
-                error = register_chrdev_region(sk_dev, 1, "sk");
-                // sk_major에 0일때 ->> 
-        } else {
-                error = alloc_chrdev_region(&sk_dev, sk_minor, 1, "sk");
-                sk_major = MAJOR(sk_dev);
-                // sk_major에 0이 아닌 다른 함수로 설저정일때 ->> 
-        }
+            if(error < 0) {
+                     printk(KERN_WARNING "sk: can't get major %d\n", sk_major);
+                     return result;
+            }
+            printk("major number=%d\n", sk_major);
 
-        if(error < 0) {
-                printk(KERN_WARNING "sk: can't get major %d\n", sk_major);
-                return result;
-        }
-        printk("major number=%d\n", sk_major);
+            /* register chrdev */
+            cdev_init(&sk_cdev, &sk_fops);
+            sk_cdev.owner = THIS_MODULE;// THis 포인터
+            sk_cdev.ops = &sk_fops; // 주소를 넘겨 줘
+            error = cdev_add(&sk_cdev, sk_dev, 1);// 최종적으로 이렇게 넘겨 줘, 캐릭터 디바이스 에드
 
-        /* register chrdev */
-        cdev_init(&sk_cdev, &sk_fops);
-        sk_cdev.owner = THIS_MODULE;// THis 포인터
-        sk_cdev.ops = &sk_fops; // 주소를 넘겨 줘
-        error = cdev_add(&sk_cdev, sk_dev, 1);// 최종적으로 이렇게 넘겨 줘, 캐릭터 디바이스 에드
+            if(error)
+                     printk(KERN_NOTICE "sk Register Error %d\n", error);
 
-        if(error)
-                printk(KERN_NOTICE "sk Register Error %d\n", error);
+            return 0;
+      }
+      module_init(sk_init);
+      module_exit(sk_exit);
+      ```
+  - APP단 소스
+      ```cpp
+      #include <stdio.h>
+      #include <unistd.h>
+      #include <stdlib.h>
+      #include <fcntl.h>
 
-        return 0;
-}
+      int main(void)
+      {
+         int fd;
 
+         fd = open("/dev/SK", O_RDWR);//dev sk pointing, mknod 필요!!
+         printf("fd = %d\n", fd);
 
+         if (fd<0) {
+            perror("/dev/SK error");
+            exit(-1);
+         }
+         else
+            printf("SK has been detected...\n");
 
-module_init(sk_init);
-module_exit(sk_exit);
-```
+         getchar();
+         close(fd);
 
-
-
-
-```cpp
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <fcntl.h>
-
-int main(void)
-{
-    int fd;
-
-    fd = open("/dev/SK", O_RDWR);//dev sk pointing, mknod 필요!!
-    printf("fd = %d\n", fd);
-
-    if (fd<0) {
-        perror("/dev/SK error");
-        exit(-1);
-    }
-    else
-        printf("SK has been detected...\n");
-
-    getchar();
-    close(fd);
-
-    return 0;
-}
-~        
-```
--GCC 로 컴파일하지말고 arm용 크로스 컴파일러로 
-
-```
-root@ubuntu-vm ~/open
-# ls
-02_open_release.zip  Module.symvers   modules.order  sk.ko     sk.mod.o  sk_app    sk_app_open
-Makefile             Modules.symvers  sk.c           sk.mod.c  sk.o      sk_app.c
-root@ubuntu-vm ~/open
-# file sk_app
-sk_app: ELF 32-bit LSB executable, ARM, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.16, not stripped
-root@ubuntu-vm ~/open
-# cp sk_app /nfs/rootfs/workSpace/
-root@ubuntu-vm ~/open
-# 
-
-```
-
-
--  주목 놓치면 안되!!
-```s
-# ls
-csk.ko   sk_app
-# ./sk_app
-fd = -1
-/dev/SK error: No such file or directory
-```
-- 위 실행에서 에러가 난 이유 : 파일이 없어서 , 장치 파일로 등록이 안되있어서 오픈이 안되있다. 장치파일을 다 이런식으로  연결되어 있어
-- 아래는 해결
-```s
-# cd /workSpace/
-# ls
-sk.ko   sk_app
-# insmod sk.ko
-SK Module is up...
-major number=251
-# mknod /dev/SK c 251 0
-# ./sk
-sk.ko   sk_app
-# ./sk_app
-Device has been opened...
-fd = 3
-SK has been detected...
-```
-- mmknod란 : 
+         return 0;
+      }
+      ~        
+      ```
+> ARM용 크로스 컴파일러로 컴파일됬는지 확인(호스트는 x86)
+  - GCC 로 컴파일하지말고 arm용 크로스 컴파일러로 
+      ```s
+      root@ubuntu-vm ~/open
+      # ls
+      sk.ko     sk.mod.o  sk_app    sk_app_open
+      Makefile  sk.c      sk.mod.c  sk.o      sk_app.c
+      =>>파일 확인(sk_app)
+      root@ubuntu-vm ~/open
+      # file sk_app
+      sk_app: ELF 32-bit LSB executable, ARM, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.16, not stripped
+      root@ubuntu-vm ~/open
+      # cp sk_app /nfs/rootfs/workSpace/
+      root@ubuntu-vm ~/open
+      # 
+      ```
+  > 유저 어플리케이션 실행 시도
+  -  주목 놓치면 안되!!
+      ```s
+      # ls
+      csk.ko   sk_app
+      # ./sk_app
+      fd = -1
+      /dev/SK error: No such file or directory
+      ```
+  - 위 실행에서 에러가 난 이유 : 파일이 없어서 , 장치 파일로 등록이 안되있어서 오픈이 안되있다. 장치파일을 다 이런식으로  연결되어 있음
+  - 리눅스/유닉스의 철학 : Everything is File
+  > 해결 방법 도출
+  - mknod /dev/SK c 251 0 라는 디바이스 파일(윈도우의 핸들러 개념)등록함으로 해결
+      ```s
+      # cd /workSpace/
+      # ls
+      sk.ko   sk_app
+      # insmod sk.ko
+      SK Module is up...
+      major number=251
+      # mknod /dev/SK c 251 0
+      # ./sk
+      sk.ko   sk_app
+      # ./sk_app
+      Device has been opened...
+      fd = 3
+      SK has been detected...
+      ```
+  - mknod란 : 리눅스 장치파일
+  - 리눅스 OS는 하드웨어(디바이스, 장치)를 파일의 형태로 추상화 시켜서 생각하는데, 이때 특정 KDD를 핸들링 하기 위해 커널과 USER사이를 연결시켜주는것이 File임
+  - File을 가지고 하드웨어 컨트롤을 할수 있게 도와주는 함수(메서드)를 파일 오퍼레이션라고 
 
 - write함수 추가하려면
 ```cpp
