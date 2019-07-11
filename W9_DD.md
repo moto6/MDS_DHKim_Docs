@@ -1615,8 +1615,8 @@ static int i=0;
 //static void  mytasklet_func(unsigned long data);   
 //DECLARE_TASKLET( mytasklet, mytasklet_func, (unsigned long)NULL); 
 static work_func_t mywork_queue_func(void *data);
-DECLARE_DELAYED_WORK(mywork,(work_func_t)mywork_queue_func);
-
+DECLARE_DELAYED_WORK(mywork,(work_func_t)mywork_queue_func);//★
+//★★★★
 /*static void mytasklet_func(unsigned long data)
 {
 	//printk("[Bottom] mytasklet_func \n");
@@ -1732,3 +1732,18 @@ MODULE_LICENSE("GPL");
 
 
 ```
+- 핵심이 되는 코드는 아래와 같다
+```cpp
+DECLARE_DELAYED_WORK(mywork,(work_func_t)mywork_queue_func);//★
+```
+```
+static work_func_t mywork_queue_func (void *data)
+{
+	for(p=0;p<0x1000;p++)
+	printk("\r test = %d",p);
+	printk(" -[Bottom] mywork_queue : 0x%02x\n",(int)i);
+
+	return 0;
+}
+```
+- 책 140p 참조
