@@ -480,6 +480,8 @@
   - 어떤 역할이고 전체 시스템에서 어디쯤 위치하고 있으며, 어떤기능을 하는지 큰그림에서 작은  
   - 대부분의 경우는 DD를 짜고, DD를 활용한 어플리케이션을 짜는 경우가 많음. 현업에 가면 DD와 APP이 별도가 아닌 하나의 개념으로 봐야 함
   - 커널 모듈 제작시, 커널컴파일을 안한 소스를 Makefile의 KDIR에 등록하면 안만들어짐, 커널 컴파일을 하며 생성되는 많은 파일들이 필요함.
+  - [리눅스 공부 - 임베디드 홀릭님 카페북](https://cafe.naver.com/lazydigital/book5089864/8630)
+  - [라즈베리파이 디바이스트리](https://wikidocs.net/3205)
   ```s
   root@ubuntu-vm /proc/1
   # mknod /dev/led c 240 0
@@ -675,76 +677,73 @@
   - mknod란 : 리눅스 장치파일
   - 리눅스 OS는 하드웨어(디바이스, 장치)를 파일의 형태로 추상화 시켜서 생각하는데, 이때 특정 KDD를 핸들링 하기 위해 커널과 USER사이를 연결시켜주는것이 File임
   - File을 가지고 하드웨어 컨트롤을 할수 있게 도와주는 함수(메서드)를 파일 오퍼레이션라고 
-
-- write함수 추가하려면
-```cpp
-struct file_operations sk_fops = {
-    .open       = sk_open,
-    .release    = sk_release,
-    .write      = (여기에 입력)
-};
-```
-- write함수 프레임만 맞게 짜기 시작해야됭
-- /dev/SK :  디바이스 드라이버 이름 > 만드는법
-```s
-mknod /dev/SK c 251 0
-```
-- 디바이스 드라이버는 대문자로 꼭 만들어야됭
-
-- 디바이스 드라이버를 만드는데 핑요한 구조체 : dev_t
-```cpp
-static dev_t sk_dev;
-```
-> 강사님이 핵심
- >> - 이쪽은 모듈 요기는 스트럭쳐
+  - write함수 추가하려면
+      ```cpp
+      struct file_operations sk_fops = {
+         .open       = sk_open,
+         .release    = sk_release,
+         .write      = (여기에 입력)
+      };
+      ```
+  - write함수 프레임만 맞게 짜기 시작해야됭
+  - /dev/SK :  디바이스 드라이버 이름 > 만드는법
+      ```s
+      mknod /dev/SK c 251 0
+      ```
+  - 디바이스 드라이버는 대문자로 꼭 만들어야됭
+  - 디바이스 드라이버를 만드는데 핑요한 구조체 : dev_t
+      ```cpp
+      static dev_t sk_dev;
+      ```
+ > 강사님의 핵심
+  - 이쪽은 모듈 요기는 스트럭쳐
   - 장치 파일로 바꿔야 특수장치파일로 만들어줘야지 어플리케이션에서 열 수 있다.
   - 오픈을 하면서 파일 디스크립터를 
   - SK : 스켈렉톤, 뼈대라는 의미
   - /dev/SK 특수 장치 파일
-   ```cpp
-   static int sk_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
-   {
-         char data[11];
+      ```cpp
+      static int sk_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
+      {
+            char data[11];
+            copy_from_user(data, buf, count);
+            printk("data >>>>> = %s\n", data);
+            return count;
+      }
 
-         copy_from_user(data, buf, count);
-         printk("data >>>>> = %s\n", data);
-
-         return count;
-   }
-
-   static int sk_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
-   {
-         char data[20] = "this is read func...";
-
-         copy_to_user(buf, data, count);
-
-         return 0;
-   }
-   ```
+      static int sk_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
+      {
+            char data[20] = "this is read func...";
+            copy_to_user(buf, data, count);
+            return 0;
+      }
+      ```
   - copy_to_user : 커널에서 유저(APP)단으로
-  - copy_from_user : 
+  - copy_from_user : User에서 커널단으로 
   - 디바이스 이름 : sk
   - 0이면 커널이 알아서 dev num 지정해주는것, !0 이면, 
+  > user APP 영역의 read() 함수
    ```cpp
    retn = read(fd, buf, 20); //APP에서의 syscall
    ```
+  > user APP 영역의 write() 함수
    ```
    retn = write(fd, buf, 10);//APP에서의 syscall
    ```
+  > Device Tree에 대한 설명
    ```
    디바이스 트리란? : 커널 4.x 부터 도입된 개념으로 기존의 D.D를 좀더 쉽게 접근하고, 생성해주는 스크립트 언어
    디바이스 트리 공부를 위해서는 : 하드웨어는 라즈베리파이3, 문서는 아래 링크 참고
    ```
-- [라즈베리파이 디바이스트리](https://wikidocs.net/3205)
-### 과제 1
-  - 과제1 : 어플리케이션 계층에서 일차원 문자배열을 선언하고 그 주소를 read() 함수를 이용하여 커널영역으로 넘겨주면, 커널영역에서 대문자를 할당하여 copy_to_user/copy_from_user 를 사용하여 다시 응용계층으로 넘겨주면 최종적으로 어플단에서 대문자를 찍는 프로그램을 작성하시고, copy_from_user 도 적용 해보세요(소문자 찍기)
- - 과제 못풀음 삽질하다가
- - 구조체 과제(조별과제)
+  ### Day2 과제
+   - 과제1 : 어플리케이션 계층에서 일차원 문자배열을 선언하고 그 주소를 read() 함수를 이용하여 커널영역으로 넘겨주면, 커널영역에서 대문자를 할당하여 copy_to_user/copy_from_user 를 사용하여 다시 응용계층으로 넘겨주면 최종적으로 어플단에서 대문자를 찍는 프로그램을 작성하시고, copy_from_user 도 적용 해보세요(소문자 찍기)
+   - 과제 못풀음 삽질하다가 ㅜㅜ 코딩연습 더하자
+   - 구조체 과제(조별과제)
+   > 이 과제의 목표 : user APP 영역과 Kernel DD영역 사이의 유기적인 연동
    ```s
    copy_to_user()/copy_from_user() 사용
    ```
-
-  - 1차과제 test_mydrv.c
+   - 1차과제 
+   > USER APP 의 test_mydrv.c
    ```cpp
    /* test_mydrv.c */
    //유저 영역의 어플리케이션 코드
@@ -783,6 +782,7 @@ static dev_t sk_dev;
    }
 
    ```
+   > KDD 의 모듈 DD 코드
    ```cpp
    /*
    mydrv.c - kernel 3.0 skeleton device driver
@@ -919,8 +919,8 @@ static dev_t sk_dev;
    MODULE_LICENSE("Dual BSD/GPL");
    ```
 
-### 과제2
- - 과제2 : 응용프로그램이 보내준 아래 구조체 형식의 데이터를 드라이버가 받아서 출력시키고 드라이버는 같은 구조체 형식으로 또 다른 데이터를 응용프로그램에게 보내주고 응용프로그램이 출력시키는 코드를 구현하세요
+  ### 과제2
+   - 과제2 : 응용프로그램이 보내준 아래 구조체 형식의 데이터를 드라이버가 받아서 출력시키고 드라이버는 같은 구조체 형식으로 또 다른 데이터를 응용프로그램에게 보내주고 응용프로그램이 출력시키는 코드를 구현하세요
    ```cpp
    /*  구조체 포맷  */
    typedef struct
@@ -939,138 +939,133 @@ static dev_t sk_dev;
     2. DD에서 -> struct file operations 에서 등록 : wrtie = sk_write
     3. 안적었음.. 뭦;
  - attriibute Packed : 구조체 peding bytes 제거하는 예약 키워드  
- - [리눅스 공부 - 임베디드 홀릭님 카페북](https://cafe.naver.com/lazydigital/book5089864/8630)
-
 #
 ## 3일차
- - DD프로그래밍 핵심
-   1. ㅇㅇ
-   2. 
-   3. 디바이스드라이버는 커널 프로그래밍 -> DD는 조금만 잘못해도 커널 패닉이 
-   4. 커널패닉은 매우 위험, 커널 프로그래밍은 
- - 강조 점 fileops. 함수포인터가 늘어나고 있어요
- - volatile 의미 두가지
-   1. 최적화 하지마라
-   2. 캐시에서 읽지 말고 메모리에서 읽어와라
+  - 강조 점 fileops. 함수포인터가 늘어나고 있어요
+    - 기본기는 항상 중요(C언어, 함수포인터 ..)
+  - DD프로그래밍 핵심
+    1. 리눅스 커널이 제공해주는 서비스, 내가 다 안짜도 이미 잘 짜여진 틀 프레임워크로써의 리눅스 커널을 느껴보기
+    2. 유저 어플리케이션은 잘못해도 커널이 보호해준다(안전장치 존재)
+    3. 디바이스드라이버는 커널 프로그래밍 -> DD는 조금만 잘못해도 커널 패닉 발생 
+    4. 커널패닉은 매우 위험, 커널 프로그래밍은 책임이 따른다
+  - volatile 의미 두가지
+    1. 최적화 하지마라
+    2. 캐시에서 읽지 말고 메모리에서 읽어와라
+  - 현업 가면 만날수 있는 상황
+    - LDD(리눅스 디바이스 드라이버)로 어떻게든 빨리 성과를 내라
+    - 그래서 지금 해야 할 일은 LDD를 실습하면서 이렇게 짜고 동작한다를 느끼면 됨
+      - 유저 어플리케이션에서의 파일 오퍼레이션스 호출이
+      - 디바이스 드라이버 단에서 어떤 매서드를 호출하는지
+      - 리눅스 응용 어플리케이션과 디바이스 드라이버 사이에 유기적인 연동과정
+      - 임베디드 리눅스 환경에서 하드웨어가 어떻게 파일로 추상화되고 , 파일 오퍼레이션스를 통해 어떻게 컨트롤 할수 있는지에 대한 믿음을
+      - 프레임워크(작업 환경)으로써의 리눅스 커널과, 작업을 수행하는 DD에 대하여
+      > cat /proc/devices : 현제 등록된 디바이스 정보를 출력하는 명령어
+      ```s
+      # cat /proc/devices
+      Character devices:
+      1 mem
+      2 pty
+      3 ttyp
+      4 /dev/vc/0
+      4 tty
+      4 ttyS
+      5 /dev/tty
+      5 /dev/console
+      5 /dev/ptmx
+      7 vcs
+      10 misc
+      13 input
+      21 sg
+      29 fb
+      67 mds2450-kscan
+      81 video4linux
+      86 ch
+      90 mtd
+      108 ppp
+      116 alsa
+      128 ptm
+      136 pts
+      180 usb
+      188 ttyUSB
+      189 usb_device
+      204 ttySAC
+      216 rfcomm
+      251 sk
+      252 BaseRemoteCtl
+      253 usbmon
+      254 rtc
 
-   ```s
-   # cat /proc/devices
-   Character devices:
-   1 mem
-   2 pty
-   3 ttyp
-   4 /dev/vc/0
-   4 tty
-   4 ttyS
-   5 /dev/tty
-   5 /dev/console
-   5 /dev/ptmx
-   7 vcs
-   10 misc
-   13 input
-   21 sg
-   29 fb
-   67 mds2450-kscan
-   81 video4linux
-   86 ch
-   90 mtd
-   108 ppp
-   116 alsa
-   128 ptm
-   136 pts
-   180 usb
-   188 ttyUSB
-   189 usb_device
-   204 ttySAC
-   216 rfcomm
-   251 sk
-   252 BaseRemoteCtl
-   253 usbmon
-   254 rtc
+      Block devices:
+      1 ramdisk
+      259 blkext
+      7 loop
+      8 sd
+      31 mtdblock
+      65 sd
+      66 sd
+      67 sd
+      68 sd
+      69 sd
+      70 sd
+      71 sd
+      128 sd
+      129 sd
+      130 sd
+      131 sd
+      132 sd
+      133 sd
+      134 sd
+      135 sd
+      179 mmc
+      #
+      ```
+  - 3일차의 핵심 : ictol_mydrv.h
+      ```cpp
+      #ifndef _IOCTL_MYDRV_H_
+      #define _IOCTL_MYDRV_H_
+      //헤더파일용 선언
+      #define IOCTL_MAGIC    254
+      //매직넘버..?
+      typedef struct
+      {
+         unsigned char data[26];	
+      } __attribute__ ((packed)) ioctl_buf;
+      //구조체가 담고있는것 캐릭터배열 26개짜리 왜 근데 계속 26개냐
 
-   Block devices:
-   1 ramdisk
-   259 blkext
-   7 loop
-   8 sd
-   31 mtdblock
-   65 sd
-   66 sd
-   67 sd
-   68 sd
-   69 sd
-   70 sd
-   71 sd
-   128 sd
-   129 sd
-   130 sd
-   131 sd
-   132 sd
-   133 sd
-   134 sd
-   135 sd
-   179 mmc
-   #
+      #define IOCTL_MYDRV_TEST           _IO(  IOCTL_MAGIC, 0 )
+      #define IOCTL_MYDRV_READ           _IOR( IOCTL_MAGIC, 1 , ioctl_buf )
+      #define IOCTL_MYDRV_WRITE          _IOW( IOCTL_MAGIC, 2 , ioctl_buf )
+      #define IOCTL_MYDRV_WRITE_READ     _IOWR( IOCTL_MAGIC, 3 , ioctl_buf )
+
+      #define IOCTL_MAXNR                   4
+
+      #endif // _IOCTL_MYDRV_H_
+      ```
+  - 위 파일은 디바이스드라이버를 짤대 정말 많이 등장 강사님 시간많이투자
+  - 어려울껀 없고 금방 하세요
+  - 3개를 봐야함  
+  1. _IO
+  2. _IOR
+  3. _IOW
+  - 매직넘버는 알아서 줘도됨
+   ```cpp
+   ioctl(fd, IOCTL_MYDRV_TEST);
+   ioctl(fd, IOCTL_MYDRV_READ, buf_in );
    ```
-- 3일차 : ictol_mydrv.h
-```cpp
-#ifndef _IOCTL_MYDRV_H_
-#define _IOCTL_MYDRV_H_
-//헤더파일용 선언
-
-#define IOCTL_MAGIC    254
-//매직넘버..?
-
-typedef struct
-{
-	unsigned char data[26];	
-} __attribute__ ((packed)) ioctl_buf;
-//구조체가 담고있는것 캐릭터배열 26개짜리 왜 근데 계속 26개냐
-
-
-#define IOCTL_MYDRV_TEST           _IO(  IOCTL_MAGIC, 0 )
-#define IOCTL_MYDRV_READ           _IOR( IOCTL_MAGIC, 1 , ioctl_buf )
-#define IOCTL_MYDRV_WRITE          _IOW( IOCTL_MAGIC, 2 , ioctl_buf )
-#define IOCTL_MYDRV_WRITE_READ     _IOWR( IOCTL_MAGIC, 3 , ioctl_buf )
-
-#define IOCTL_MAXNR                   4
-
-#endif // _IOCTL_MYDRV_H_
-```
-- 위 파일은 디바이스드라이버를 짤대 정말 많이 등장 강사님 시간많이투자
-- 어려울껀 없고 금방 하세요
-- 3개를 봐야함  
-  1. 
-  2. 
-  3. 
-- 매직넘버는 알아서 줘도됨
-```cpp
-
-  ioctl(fd,IOCTL_MYDRV_TEST);
-  
-  ioctl(fd, IOCTL_MYDRV_READ, buf_in );
-```
-```cpp
-
-```
-  - 어바웃 포팅
+  - 어바웃 포팅 : 리눅스 포팅을 진행하며 
      - 창호형이 리눅스 포팅을 하기로 했어
      - 삼성에서 chip과 보드를 같이 출시를 해 (데모)
      - 왠만큼 소스와 회로 오픈해줘 - 업체에서 가져다가 모디파이해서 만들면 됭
-
--
-- 오늘의 버그 증상 : DD가 첫회만 잘 돈다.. 첫번째 부팅 후 정상동작 확인한 다음에 모듈을 내렸다가 다시 올리려고 하면 해당 메시지 발생함.
-```s
-# insmod hello.ko
-Hello DD world !!
-IRQ_EINT3 failed to request external interrupt.
-insmod: can't insert 'hello.ko': unknown symbol in module, or unknown parameter
-#
-```
-- APP 코드
+  - 오늘의 버그 증상 : DD가 첫회만 잘 돈다.. 첫번째 부팅 후 정상동작 확인한 다음에 모듈을 내렸다가 다시 올리려고 하면 해당 메시지 발생함.
+   ```s
+   # insmod hello.ko
+   Hello DD world !!
+   IRQ_EINT3 failed to request external interrupt.
+   insmod: can't insert 'hello.ko': unknown symbol in module, or unknown parameter
+   ```
+  - APP 코드
    ```cpp
    /* test_mydrv.c */
-
    #include <stdio.h>
    #include <stdlib.h>
    #include <sys/types.h>
@@ -1112,7 +1107,6 @@ insmod: can't insert 'hello.ko': unknown symbol in module, or unknown parameter
    close(fd);
    return (0);
    }
-
    ```
    - DD 코드
    ```cpp
@@ -1416,8 +1410,42 @@ insmod: can't insert 'hello.ko': unknown symbol in module, or unknown parameter
    MODULE_AUTHOR(DRIVER_AUTHOR);		/* Who wrote this module? */
    MODULE_DESCRIPTION(DRIVER_DESC);	/* What does this module do */
    MODULE_SUPPORTED_DEVICE("testdevice");
-
    ```
+  > 여기서부터 책 정리
+  - 캐릭터 디바이스 등록과 해제 관련한 디바이스 드라이버 API 총 정리 : 57p 
+      ```cpp
+      cdev_init
+      cdev_add
+      cdev_del
+      registor_chrdev_region
+      alloc_chrdev_region
+      unregistor_chrdev_region
+      ```
+  - File operations의 4가지 역할/특징
+    1. LDD와 APP을 연결
+    2. 함수 포인터의 집합
+    3. 특정 동작함수를 포인팅
+    4. 지정하지 않으면 필수적으로 NULL
+  - 시그널의 3가지 동작모드
+    1. default : 기본동작
+    2. abort : 무시
+    3. Handler : 유저 정의 동작
+  - KDD와 APP간 데이터의 전달 방법 4가지
+    1. set user() : 주어는 커널
+    2. get user() : 주어는 커널
+    3. copy_to_user() :  주어는 커널
+    4. copy_from_user() :  주어는 커널
+  - 커널모듈과 DD간의 차이 두가지
+    1. 파일 오퍼레이션스 유무(DD는 존재함)
+    2. 장치 특수파일(/dev/proc/char?) -> mknod로 장입
+  - KDD of 캐릭터 디바이스  
+    - 캐릭터 디바이스 API 학습
+    - Major 번호 결정 : Mannual allocation과 Dynamic 두가지 방식 존재
+    - 디바이스 타입 Dev_t 장치 관리 번호
+    - 장치 파일의 생성 : mknod 
+    - 목적 : DD로 사용할 장치 파일을 만든다
+    - 장치파일의 생성은 어떤 디바이스 이름의 생성과 같음
+    - File operations -> 앞에서 선술 함.
  #
  ## Day4
  - 커널로그(타이머 인터럽트 확인)
