@@ -1422,3 +1422,313 @@ insmod: can't insert 'hello.ko': unknown symbol in module, or unknown parameter
    MODULE_SUPPORTED_DEVICE("testdevice");
 
    ```
+ #
+ ## Day4
+ - 커널로그(타이머 인터럽트 확인)
+   ```s
+   root@ubuntu-vm
+   kernel-mds2450-3.0.22/led
+   # tail -f /var/log/messages 
+   ```
+```cpp
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/delay.h>
+#include <linux/timer.h>
+struct timer_list timer;
+
+void my_timer(unsigned long data)//이거는 리눅스 커널개발자들이
+{
+  int i;
+  for(i=1; i<=data; i++) {
+    printk("Kernel Timer Time-Out Function Doing_%d...\n", i);
+  }
+  timer.expires = jiffies + 2*HZ;//여기 두줄이 없으면
+  add_timer(&timer);//타이머가 한번밖에 안결려
+  // 마치 테엽을 감아주는 듯한 동작
+  printk("Kernel Timer Time-Out Function Done!!!\n");
+}
+
+int timerTest_init(void)
+{
+  printk(KERN_INFO "timerTest Module is Loaded!! ....\n");
+  init_timer(&timer);
+  //timer.expires = get_jiffies_64() + 3*HZ;
+  timer.expires = jiffies + 3*HZ;
+  timer.function = my_timer;
+  timer.data = 5;
+  add_timer(&timer);
+
+  return 0;
+}
+
+void timerTest_exit(void)
+{
+  del_timer(&timer);
+  printk("timerTest Module is Unloaded ....\n");
+}
+
+module_init(timerTest_init);
+module_exit(timerTest_exit);
+MODULE_LICENSE("Dual BSD/GPL");
+
+/*
+ #tail -f /var/log/messages
+*/
+```
+
+- 강사님의 퀘스트
+1. PC-> ARM 포팅
+2. ARM기반 보드에서 LED 제어(타이머 인터럽트)
+3. DD작성
+4. 커널에 포함
+```cpp
+printk("LED on\n");
+GPGDAT ^= (0xf << 4);
+```
+
+- 드라이버를 커널에 포함하기 작업
+1단계
+```s
+root@ubuntu-vm ~/kernel-mds2450-3.0.22/drivers/char
+# pwd
+/root/kernel-mds2450-3.0.22/drivers/char
+root@ubuntu-vm ~/kernel-mds2450-3.0.22/drivers/char
+# gedit Kconfig
+```
+- Kconfig 파일속 8라인부터 추가하기
+```s
+config MDS2450_LED
+	tristate "MDS2450 LED driver"
+	depends on INPUT
+	  help
+	mds2450 hello driver
+```
+- 파일 내용 전체
+```s
+#
+# Character device configuration
+#
+
+menu "Character devices"
+
+source "drivers/tty/Kconfig"
+
+config MDS2450_LED
+	tristate "MDS2450 LED driver"
+	depends on INPUT
+	  help
+	mds2450 hello driver
+
+config DEVKMEM
+	bool "/dev/kmem virtual device support"
+	default y
+	help
+	  Say Y here if you want to support the /dev/kmem device. The
+	  /dev/kmem device is rarely used, but can be used for certain
+	  kind of kernel debugging operations.
+	  When in doubt, say "N".
+....(중략)...
+```
+
+- 캐릭터 DD의 Makefile 수정"/root/kernel-mds2450-3.0.22/drivers/char" 경로상의 Makefile 수정
+```s
+obj-y				+= mem.o random.o
+obj-$(CONFIG_TTY_PRINTK)	+= ttyprintk.o
+obj-y				+= misc.o
+obj-$(CONFIG_MDS2450_LED)	+= timerTest_mod.o
+obj-$(CONFIG_ATARI_DSP56K)	+= dsp56k.o
+obj-$(CONFIG_VIRTIO_CONSOLE)	+= virtio_console.o
+```
+리눅스의 모든 커널마다 하나씩 살고 있는 파일
+스페이스바 ECS
+```s
+...(중략)...
+  CC      arch/arm/boot/compressed/decompress.o
+  SHIPPED arch/arm/boot/compressed/lib1funcs.S
+  AS      arch/arm/boot/compressed/lib1funcs.o
+  LD      arch/arm/boot/compressed/vmlinux
+  OBJCOPY arch/arm/boot/zImage
+  Kernel: arch/arm/boot/zImage is ready
+root@ubuntu-vm ~/kernel-mds2450-3.0.22
+# ^C
+root@ubuntu-vm ~/kernel-mds2450-3.0.22
+# 
+
+```
+- 정리(강사님의)
+한일: 커널타이머 만들어썽, 커널내부에서 도는거야 모듈형태로 스터디 디바이스드라이버 형태로 바꾸세요 타이머 핸들러 기능 검증 됬어요 커널 부팅될떄 심어보자, 
+- 시퀀스 정리
+- 강사님의 추가과제
+  - 현상황 커널단에 타이머DD 심어진 상황
+  - 
+  1. 컴파일러 셋팅
+  2. DD 모듈 수정 확인 -> "/root/kernel-mds2450-3.0.22/drivers/char" 경로상에 존재하는지 확인
+  3. char폴더 에서의  Kconfig 편집 ->> "Kconfig 파일속 8라인부터 추가하기" 항목 참조
+  4. char폴더 에서의 Makefile 수정 ->> 위 항목 참조
+5. 
+6. 두칸앞나가서 (커널폴더) Make menuconfig 술정
+7. DD->char->MDS2450 아스테리스터 커널포함 (스페이스바로 셋팅)->> ESC눌러서 나가는데 꼭 저장
+8. 커널폴더에서 make clean , make
+9. 아래 확인
+```s
+root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
+# pwd
+/root/kernel-mds2450-3.0.22/arch/arm/boot
+root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
+# ls
+Image  Makefile  bootp  compressed  install.sh  zImage
+root@ubuntu-vm ~/kernel-mds2450-3.0.22/arch/arm/boot
+# 
+```
+10. tftp 폴더에 zImage복사 후 
+
+- Makefile 자동화
+```s
+cp timerTest_mod.ko /nfs/rootfs/workSpace
+cp timerTest_mod.c /root/kernel-mds2450-3.0.22/drivers/char
+cp APP_DHKim /nfs/rootfs/workSpace/
+```
+
+- 타스크렛과 어포 큐 
+```cpp
+#include <linux/errno.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/init.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/device.h>
+#include <asm/io.h>
+#include <asm/irq.h>
+
+#include <mach/regs-gpio.h>
+#include <plat/gpio-cfg.h>
+#include <linux/gpio.h>
+//#include <linux/workqueue.h>
+
+#define DRV_NAME		"keyint"
+static int p;
+static int i=0;
+//static void  mytasklet_func(unsigned long data);   
+//DECLARE_TASKLET( mytasklet, mytasklet_func, (unsigned long)NULL); 
+static work_func_t mywork_queue_func(void *data);
+DECLARE_DELAYED_WORK(mywork,(work_func_t)mywork_queue_func);
+
+/*static void mytasklet_func(unsigned long data)
+{
+	//printk("[Bottom] mytasklet_func \n");
+       printk(" -[Bottom] mytasklet_func : 0x%02x\n",(int)data);
+	
+    for(p=0;p<0x1000;p++)
+      printk("\r test = %d", p); 
+}*/
+static work_func_t mywork_queue_func (void *data)
+{
+	for(p=0;p<0x1000;p++)
+	printk("\r test = %d",p);
+	printk(" -[Bottom] mywork_queue : 0x%02x\n",(int)i);
+
+	return 0;
+}
+
+struct rebis_key_detection
+{
+    int             irq;
+    int             pin;
+    int             pin_setting;
+    char            *name;
+    int             last_state;
+};
+
+static struct rebis_key_detection rebis_gd = {
+   IRQ_EINT7, S3C2410_GPF(7), S3C2410_GPF7_EINT7, "key-detect", 0
+};
+
+
+static irqreturn_t
+rebis_keyevent(int irq, void *dev_id, struct pt_regs *regs)
+{
+    //struct rebis_key_detection *gd = (struct rebis_key_detection *) dev_id;
+    //int             state;
+	printk("\nkeypad was pressed \n");
+	schedule_delayed_work( &mywork,0);
+       /*ytasklet.data = i++;
+        tasklet_schedule( &mytasklet );*/
+
+//    for(p=0;p<0x1000;p++)
+//       printk("\r test = %d", p); 
+
+    return IRQ_HANDLED;
+
+}
+
+static int __init rebis_keyint_init(void)
+{
+	int ret;
+
+    gpio_request(S3C2410_GPF(2), "led 1");
+    gpio_request(S3C2410_GPF(3), "led 2");
+    gpio_request(S3C2410_GPF(4), "led 3");
+    gpio_request(S3C2410_GPF(5), "led 4");
+    gpio_request(S3C2410_GPF(6), "led 5");
+
+    // set output mode
+    s3c_gpio_cfgpin(S3C2410_GPF(2), S3C_GPIO_SFN(1));
+    s3c_gpio_cfgpin(S3C2410_GPF(3), S3C_GPIO_SFN(1));
+    s3c_gpio_cfgpin(S3C2410_GPF(4), S3C_GPIO_SFN(1));
+    s3c_gpio_cfgpin(S3C2410_GPF(5), S3C_GPIO_SFN(1));
+    s3c_gpio_cfgpin(S3C2410_GPF(6), S3C_GPIO_SFN(1));
+    // set data
+    gpio_direction_output(S3C2410_GPF(2), 1);
+    gpio_direction_output(S3C2410_GPF(3), 1);
+    gpio_direction_output(S3C2410_GPF(4), 1);
+    gpio_direction_output(S3C2410_GPF(5), 1);
+    gpio_direction_output(S3C2410_GPF(6), 1); 
+
+    s3c_gpio_cfgpin(S3C2410_GPF(7), S3C_GPIO_SFN(2));
+
+
+
+#if 0
+	writel(readl(S3C2410_EXTINT0) & (~(0xf << 12)), S3C2410_EXTINT0);	
+	writel(readl(S3C2410_EXTINT0) | (0x2 << 12), S3C2410_EXTINT0); // Falling Edge interrupt
+	
+#endif 
+
+
+    if( request_irq(IRQ_EINT7, (void *)rebis_keyevent, IRQF_DISABLED | IRQF_TRIGGER_RISING, DRV_NAME, &rebis_gd) )     
+    {   
+                printk("failed to request external interrupt.\n");
+                ret = -ENOENT;
+                return ret;
+    }  
+	printk(KERN_INFO "%s successfully loaded\n", DRV_NAME);
+
+    return 0;
+    
+}
+
+static void __exit rebis_keyint_exit(void)
+{
+   gpio_free(S3C2410_GPF(2));
+   gpio_free(S3C2410_GPF(3));
+   gpio_free(S3C2410_GPF(4));
+   gpio_free(S3C2410_GPF(5));
+   gpio_free(S3C2410_GPF(6));
+
+    free_irq(rebis_gd.irq, &rebis_gd);
+
+    printk(KERN_INFO "%s successfully removed\n", DRV_NAME);
+}
+
+
+module_init(rebis_keyint_init);
+module_exit(rebis_keyint_exit);
+
+MODULE_LICENSE("GPL");
+
+
+```
