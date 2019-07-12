@@ -2016,3 +2016,1249 @@ module_exit(mydrv_exit);
 
 MODULE_LICENSE("Dual BSD/GPL");
 ```
+> 4일차 과제 강사님의 코드리뷰
+
+- APP 소스
+```cpp
+```
+- KDD 소스
+```cpp
+```
+#
+## Day5
+  - 공부는 
+  - EXEC의 아예 다른 
+  - 고유메모리 킬, 다른프로세스 나갈수 있고
+  - 바램이 있다면, 리눅스가 만만하고 할만하구나
+      ```
+      [5일차 프로젝트 - 요구조건]
+      프로젝트
+      필수사항
+      1) 디바이스드라이버 작성
+      2) IOCTRL (IOCTL) 사용
+      3) 커널타이머 사용
+      4) 인터럽트 사용
+      5) 응용계층과 커널계층 데이터 전송 및 복사
+      6) 테스트완료된 디바이스드라이버를 커널에 포함해서 부팅시 확인
+      7) 어플리케이션과 연동 필수!!!(시그널, fork, 쓰레드, IPC, 공유메모리.. 다양하게 사용할것)
+      8) 타스크렛 이나 워크큐 사용할것
+      9) 주제는 자유
+      4:30까지 서버에 제출..
+      ```
+  - 나의 구현목표
+      ```
+      [5일차 프로젝트 - 나의 구현목표]
+      프로젝트
+      필수사항
+      1) 디바이스드라이버 작성 -> ok
+      2) IOCTRL (IOCTL) 사용 -> ok
+      3) 커널타이머 사용 -> LED 1초마다 점멸하는 인 커널 모듈 
+      4) 인터럽트 사용 -> 버튼을 누르면 LED가 바뀜  버튼에 따라 다르게
+      5) 응용계층과 커널계층 데이터 전송 및 복사 -> 시그널 발송해서 APP에서 시그널핸들러가 출력
+      6) 테스트완료된 디바이스드라이버를 커널에 포함해서 부팅시 확인 -> LED 1초마다 점멸하는 인 커널 모듈 
+      7) 어플리케이션과 연동 필수!!!(시그널, fork, 쓰레드, IPC, 공유메모리.. 다양하게 사용할것)
+      8) 타스크렛 이나 워크큐 사용할것
+      9) 주제는 자유
+      4:30까지 서버에 제출..
+      ```
+  > 나의 코드
+```cpp
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+#include <linux/kernel.h>   /* printk() */
+#include <linux/slab.h>   /* kmalloc() */
+#include <linux/fs.h>       /* everything... */
+#include <linux/errno.h>    /* error codes */
+#include <linux/types.h>    /* size_t */
+#include <asm/uaccess.h>
+#include <linux/kdev_t.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/errno.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/init.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/device.h>
+#include <asm/io.h>
+#include <asm/irq.h>
+#include <mach/regs-gpio.h>
+#include <plat/gpio-cfg.h>
+#include <linux/gpio.h>
+#include <linux/sched.h>
+#include "ioctl_mydrv.h"
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+#define GPGCON *(volatile unsigned long *)(kva)
+#define GPGDAT *(volatile unsigned long *)(kva + 4)
+#define DEVICE_NAME "mydrv"
+
+static int mydrv_major = 241, mydrv_minor = 0;;
+module_param(mydrv_major, int, 0);
+//module_param(sk_major, int, 0);
+static int my_kill_proc(pid_t pid, int sig);
+static int result;
+static void *kva;
+static dev_t mydrv_dev;
+static struct cdev mydrv_cdev;
+
+//mydrv_setup_cdev
+static void mydrv_setup_cdev(struct cdev *dev, int minor,
+    struct file_operations *fops);
+//
+static int mydrv_register_cdev(void);
+static int mydrv_open(struct inode *inode, struct file *filp);
+static int mydrv_release(struct inode *inode, struct file *filp);
+static int mydrv_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos);
+static int mydrv_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
+static int mydrv_ioctl ( struct file *filp, unsigned int cmd, unsigned long arg);
+//
+
+
+static int mydrv_open(struct inode *inode, struct file *file)
+{
+  printk("mydrv opened !!\n");
+  kva = ioremap(0x56000060, 16);
+  printk("kva = 0x%x\n", (int)kva);
+  GPGDAT |= 0xf << 4;
+  GPGCON &= ~(0xff << 8);
+  GPGCON |= 0x55 << 8;
+  return 0;
+}
+
+static int mydrv_release(struct inode *inode, struct file *file)
+{
+  printk("mydrv released !!\n");
+  return 0;
+}
+
+static ssize_t mydrv_read(struct file *filp, char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+  //volatile int i;
+  
+  printk("KDD : Hello i'm kernel mydrv_read()\n");
+  
+  //LED Toggle func in READ method
+  GPGDAT ^= (0xf << 4);
+
+  return 0;
+
+}
+
+static ssize_t mydrv_write(struct file *filp,const char __user *buf, size_t count,
+                            loff_t *f_pos)
+{	
+  int id;
+	//char data[11];
+	get_user(id,(int *)buf);
+	printk("\n [ KDD ] id = %d\n",id);\
+	//mdelay(1000);
+	//mdelay(1000);
+	my_kill_proc(id,SIGUSR1);
+	return count;
+/*
+  char *k_buf;
+    
+  k_buf = kmalloc(count,GFP_KERNEL);
+  if(copy_from_user(k_buf,buf,count))
+  	return -EFAULT;
+  printk("k_buf = %s\n",k_buf);
+  printk("mydrv_write is invoked\n");
+  kfree(k_buf);
+  return 0;*/
+}
+
+
+static int sk_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
+{  
+  
+  ioctl_buf *k_buf;
+  int   i,err, size;  
+  int leddata=0;    
+
+
+  switch( cmd ) {  
+      
+    case IOCTL_LED_1_ON :
+      printk("LED_1_ON\n");
+      leddata = 0x01;
+      GPGDAT=GPGDAT & ~(leddata<<4);
+      mdelay(10);
+      break;
+
+    case IOCTL_LED_2_ON :
+      for(i=0; i<30; i++)
+      {
+      GPGDAT ^= (0xf << 4);
+      mdelay(1000);
+      }
+      /*
+      printk("LED_2_ON\n");
+      leddata = 0x10;
+      GPGDAT=GPGDAT & ~(leddata<<4);
+      mdelay(10);
+      */
+      break;
+    /*
+    case IOCTL_LED_1_OFF :
+      printk("LED_1_OFF\n");
+      break;
+               
+    case IOCTL_LED_2_OFF :
+      printk("LED_2_OFF\n");
+      break;
+    
+    case test :
+      printk("IOCTL_TESTED Processed!!\n");
+      break;
+       */
+    default :
+      printk("Invalid IOCTL  Processed!!\n");
+      break; 
+  }  
+  
+    return 0;  
+}  
+
+
+
+static struct file_operations mydrv_fops = {
+	.owner           = THIS_MODULE,
+  .read	           = mydrv_read,
+  .write           = mydrv_write,
+	.open            = mydrv_open,
+  .unlocked_ioctl  = sk_ioctl,
+	.release         = mydrv_release,
+};
+
+#define MAX_MYDRV_DEV 1
+
+static struct cdev MydrvDevs[MAX_MYDRV_DEV];
+
+static int mydrv_init(void)
+{
+	int result;
+	dev_t dev = MKDEV(mydrv_major, 0);
+
+	/* Figure out our device number. */
+	if (mydrv_major)
+		result = register_chrdev_region(dev, 1, DEVICE_NAME);
+	else {
+		result = alloc_chrdev_region(&dev,0, 1, DEVICE_NAME);
+		mydrv_major = MAJOR(dev);
+	}
+	if (result < 0) {
+		printk(KERN_WARNING "mydrv: unable to get major %d\n", mydrv_major);
+		return result;
+	}
+	if (mydrv_major == 0)
+		mydrv_major = result;
+
+	mydrv_setup_cdev(MydrvDevs,0, &mydrv_fops);
+
+
+  if((result = mydrv_register_cdev()) < 0)
+  {
+    return result;
+  }
+
+	printk("mydrv_init done\n");	
+	return 0;
+}
+
+static void mydrv_exit(void)
+{
+	cdev_del(MydrvDevs);
+	unregister_chrdev_region(MKDEV(mydrv_major, 0), 1);
+	printk("mydrv_exit done\n");
+}
+
+
+
+static int my_kill_proc(pid_t pid, int sig) {
+    int error = -ESRCH;           /* default return value */
+    struct task_struct* p;
+    struct task_struct* t = NULL; 
+    struct pid* pspid;
+    rcu_read_lock();
+    p = &init_task;               /* start at init */
+    do {
+        if (p->pid == pid) {      /* does the pid (not tgid) match? */
+            t = p;    
+            break;
+        }
+        p = next_task(p);         /* "this isn't the task you're looking for" */
+    } while (p != &init_task);    /* stop when we get back to init */
+    if (t != NULL) {
+        pspid = t->pids[PIDTYPE_PID].pid;
+        if (pspid != NULL) error = kill_pid(pspid,sig,1);
+    }
+    rcu_read_unlock();
+    return error;
+}
+
+/* Set up the cdev structure for a device. */
+static void mydrv_setup_cdev(struct cdev *dev, int minor,
+    struct file_operations *fops)
+{
+  int err, devno = MKDEV(mydrv_major, minor);
+    
+  cdev_init(dev, fops);
+  dev->owner = THIS_MODULE;
+  dev->ops = fops;
+  err = cdev_add (dev, devno, 1);
+  
+  if (err)
+    printk (KERN_NOTICE "Error %d adding mydrv%d", err, minor);
+}
+
+static int mydrv_register_cdev(void)
+{
+  int error;
+
+  /* allocation device number */
+  if(mydrv_major) {
+    mydrv_dev = MKDEV(mydrv_major, mydrv_minor);
+    printk(KERN_INFO "timerTest Module is Loaded!! ....\n");
+    error = register_chrdev_region(mydrv_dev, 1, "mydrv");
+  } else {
+    error = alloc_chrdev_region(&mydrv_dev, mydrv_minor, 1, "mydrv");
+    mydrv_major = MAJOR(mydrv_dev);
+  }
+
+  if(error < 0) {
+    printk(KERN_WARNING "mydrv: can't get major %d\n", mydrv_major);
+    return result;
+  }
+  printk("mydrv major number=%d\n", mydrv_major);
+
+  /* register chrdev */
+  cdev_init(&mydrv_cdev, &mydrv_fops);
+  mydrv_cdev.owner = THIS_MODULE;
+  mydrv_cdev.ops = &mydrv_fops;
+  error = cdev_add(&mydrv_cdev, mydrv_dev, 1);
+
+  if(error)
+    printk(KERN_NOTICE "mydrv Register Error %d\n", error);
+
+  return 0;
+}
+
+module_init(mydrv_init);
+module_exit(mydrv_exit);
+```
+```cpp
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+#include <linux/kernel.h>   /* printk() */
+#include <linux/slab.h>   /* kmalloc() */
+#include <linux/fs.h>       /* everything... */
+#include <linux/errno.h>    /* error codes */
+#include <linux/types.h>    /* size_t */
+#include <asm/uaccess.h>
+#include <linux/kdev_t.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/errno.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/init.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/device.h>
+#include <asm/io.h>
+#include <asm/irq.h>
+#include <mach/regs-gpio.h>
+#include <plat/gpio-cfg.h>
+#include <linux/gpio.h>
+#include <linux/sched.h>
+#include "ioctl_mydrv.h"
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+#define GPGCON *(volatile unsigned long *)(kva)
+#define GPGDAT *(volatile unsigned long *)(kva + 4)
+#define DEVICE_NAME "mydrv"
+
+static int mydrv_major = 241, mydrv_minor = 0;;
+module_param(mydrv_major, int, 0);
+//module_param(sk_major, int, 0);
+static int my_kill_proc(pid_t pid, int sig);
+static int result;
+static void *kva;
+static dev_t mydrv_dev;
+static struct cdev mydrv_cdev;
+
+//mydrv_setup_cdev
+static void mydrv_setup_cdev(struct cdev *dev, int minor,
+    struct file_operations *fops);
+//
+static int mydrv_register_cdev(void);
+static int mydrv_open(struct inode *inode, struct file *filp);
+static int mydrv_release(struct inode *inode, struct file *filp);
+static int mydrv_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos);
+static int mydrv_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
+static int mydrv_ioctl ( struct file *filp, unsigned int cmd, unsigned long arg);
+//
+
+
+static int mydrv_open(struct inode *inode, struct file *file)
+{
+  printk("mydrv opened !!\n");
+  kva = ioremap(0x56000060, 16);
+  printk("kva = 0x%x\n", (int)kva);
+  GPGDAT |= 0xf << 4;
+  GPGCON &= ~(0xff << 8);
+  GPGCON |= 0x55 << 8;
+  return 0;
+}
+
+static int mydrv_release(struct inode *inode, struct file *file)
+{
+  printk("mydrv released !!\n");
+  return 0;
+}
+
+static ssize_t mydrv_read(struct file *filp, char __user *buf, size_t count,
+                loff_t *f_pos)
+{
+  //volatile int i;
+  
+  printk("KDD : Hello i'm kernel mydrv_read()\n");
+  
+  //LED Toggle func in READ method
+  GPGDAT ^= (0xf << 4);
+
+  return 0;
+
+}
+
+static ssize_t mydrv_write(struct file *filp,const char __user *buf, size_t count,
+                            loff_t *f_pos)
+{	
+  int id;
+	//char data[11];
+	get_user(id,(int *)buf);
+	printk("\n [ KDD ] id = %d\n",id);\
+	//mdelay(1000);
+	//mdelay(1000);
+	my_kill_proc(id,SIGUSR1);
+	return count;
+/*
+  char *k_buf;
+    
+  k_buf = kmalloc(count,GFP_KERNEL);
+  if(copy_from_user(k_buf,buf,count))
+  	return -EFAULT;
+  printk("k_buf = %s\n",k_buf);
+  printk("mydrv_write is invoked\n");
+  kfree(k_buf);
+  return 0;*/
+}
+
+
+static int sk_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
+{  
+  
+  ioctl_buf *k_buf;
+  int   i,err, size;  
+  int leddata=0;    
+
+
+  switch( cmd ) {  
+      
+    case IOCTL_LED_1_ON :
+      printk("LED_1_ON\n");
+      leddata = 0x01;
+      GPGDAT=GPGDAT & ~(leddata<<4);
+      mdelay(10);
+      break;
+
+    case IOCTL_LED_2_ON :
+      for(i=0; i<30; i++)
+      {
+      GPGDAT ^= (0xf << 4);
+      mdelay(1000);
+      }
+      /*
+      printk("LED_2_ON\n");
+      leddata = 0x10;
+      GPGDAT=GPGDAT & ~(leddata<<4);
+      mdelay(10);
+      */
+      break;
+    /*
+    case IOCTL_LED_1_OFF :
+      printk("LED_1_OFF\n");
+      break;
+               
+    case IOCTL_LED_2_OFF :
+      printk("LED_2_OFF\n");
+      break;
+    
+    case test :
+      printk("IOCTL_TESTED Processed!!\n");
+      break;
+       */
+    default :
+      printk("Invalid IOCTL  Processed!!\n");
+      break; 
+  }  
+  
+    return 0;  
+}  
+
+
+
+static struct file_operations mydrv_fops = {
+	.owner           = THIS_MODULE,
+  .read	           = mydrv_read,
+  .write           = mydrv_write,
+	.open            = mydrv_open,
+  .unlocked_ioctl  = sk_ioctl,
+	.release         = mydrv_release,
+};
+
+#define MAX_MYDRV_DEV 1
+
+static struct cdev MydrvDevs[MAX_MYDRV_DEV];
+
+static int mydrv_init(void)
+{
+	int result;
+	dev_t dev = MKDEV(mydrv_major, 0);
+
+	/* Figure out our device number. */
+	if (mydrv_major)
+		result = register_chrdev_region(dev, 1, DEVICE_NAME);
+	else {
+		result = alloc_chrdev_region(&dev,0, 1, DEVICE_NAME);
+		mydrv_major = MAJOR(dev);
+	}
+	if (result < 0) {
+		printk(KERN_WARNING "mydrv: unable to get major %d\n", mydrv_major);
+		return result;
+	}
+	if (mydrv_major == 0)
+		mydrv_major = result;
+
+	mydrv_setup_cdev(MydrvDevs,0, &mydrv_fops);
+
+
+  if((result = mydrv_register_cdev()) < 0)
+  {
+    return result;
+  }
+
+	printk("mydrv_init done\n");	
+	return 0;
+}
+
+static void mydrv_exit(void)
+{
+	cdev_del(MydrvDevs);
+	unregister_chrdev_region(MKDEV(mydrv_major, 0), 1);
+	printk("mydrv_exit done\n");
+}
+
+
+
+static int my_kill_proc(pid_t pid, int sig) {
+    int error = -ESRCH;           /* default return value */
+    struct task_struct* p;
+    struct task_struct* t = NULL; 
+    struct pid* pspid;
+    rcu_read_lock();
+    p = &init_task;               /* start at init */
+    do {
+        if (p->pid == pid) {      /* does the pid (not tgid) match? */
+            t = p;    
+            break;
+        }
+        p = next_task(p);         /* "this isn't the task you're looking for" */
+    } while (p != &init_task);    /* stop when we get back to init */
+    if (t != NULL) {
+        pspid = t->pids[PIDTYPE_PID].pid;
+        if (pspid != NULL) error = kill_pid(pspid,sig,1);
+    }
+    rcu_read_unlock();
+    return error;
+}
+
+/* Set up the cdev structure for a device. */
+static void mydrv_setup_cdev(struct cdev *dev, int minor,
+    struct file_operations *fops)
+{
+  int err, devno = MKDEV(mydrv_major, minor);
+    
+  cdev_init(dev, fops);
+  dev->owner = THIS_MODULE;
+  dev->ops = fops;
+  err = cdev_add (dev, devno, 1);
+  
+  if (err)
+    printk (KERN_NOTICE "Error %d adding mydrv%d", err, minor);
+}
+
+static int mydrv_register_cdev(void)
+{
+  int error;
+
+  /* allocation device number */
+  if(mydrv_major) {
+    mydrv_dev = MKDEV(mydrv_major, mydrv_minor);
+    printk(KERN_INFO "timerTest Module is Loaded!! ....\n");
+    error = register_chrdev_region(mydrv_dev, 1, "mydrv");
+  } else {
+    error = alloc_chrdev_region(&mydrv_dev, mydrv_minor, 1, "mydrv");
+    mydrv_major = MAJOR(mydrv_dev);
+  }
+
+  if(error < 0) {
+    printk(KERN_WARNING "mydrv: can't get major %d\n", mydrv_major);
+    return result;
+  }
+  printk("mydrv major number=%d\n", mydrv_major);
+
+  /* register chrdev */
+  cdev_init(&mydrv_cdev, &mydrv_fops);
+  mydrv_cdev.owner = THIS_MODULE;
+  mydrv_cdev.ops = &mydrv_fops;
+  error = cdev_add(&mydrv_cdev, mydrv_dev, 1);
+
+  if(error)
+    printk(KERN_NOTICE "mydrv Register Error %d\n", error);
+
+  return 0;
+}
+
+module_init(mydrv_init);
+module_exit(mydrv_exit);
+```
+
+
+
+> 강사님 샘플 코드
+```cpp
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/major.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/kernel.h>
+#include <asm/io.h>
+#include <asm/uaccess.h>
+#include <linux/delay.h>
+#include <linux/timer.h>
+#include <linux/kdev_t.h>
+#include <linux/device.h>
+#include <linux/slab.h>   /* kmalloc() */
+#include <linux/errno.h>    /* error codes */
+#include <linux/types.h>    /* size_t */
+#include <asm/irq.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+
+#include <mach/gpio.h>
+#include <mach/regs-gpio.h>
+#include <plat/gpio-cfg.h>
+#include <linux/gpio.h>
+#include "project_ioctl.h"
+
+#define DEVICE_NAME "project"
+#define GPGCON *(volatile unsigned long *)(Gkva)
+#define GPGDAT *(volatile unsigned long *)(Gkva + 4)
+#define GPFCON *(volatile unsigned long *)(Fkva)
+#define GPFDAT *(volatile unsigned long *)(Fkva + 4)
+
+struct timer_list timer;
+static int project_major = 241, project_minor = 0;
+static int result;
+static dev_t project_dev;
+static void *Gkva;
+static void *Fkva;
+static pid_t userpid;
+static int status;
+int led = 0x1;
+
+static struct cdev project_cdev;
+static int project_register_cdev(void);
+
+static work_func_t mywork_queue_func(void *data);
+DECLARE_DELAYED_WORK(mywork,(work_func_t)mywork_queue_func);
+
+/* TODO: Define Prototype of functions */
+static int project_open(struct inode *inode, struct file *filp);
+static int project_release(struct inode *inode, struct file *filp);
+static int project_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos);
+static int project_read(struct file *filp, char *buf, size_t count, loff_t *f_pos);
+
+int my_kill_proc(pid_t pid, int sig) {
+    int error = -ESRCH;           /* default return value */
+    struct task_struct* p;
+    struct task_struct* t = NULL; 
+    struct pid* pspid;
+    rcu_read_lock();
+    p = &init_task;               /* start at init */
+    do {
+        if (p->pid == pid) {      /* does the pid (not tgid) match? */
+            t = p;    
+            break;
+        }
+        p = next_task(p);         /* "this isn't the task you're looking for" */
+    } while (p != &init_task);    /* stop when we get back to init */
+    if (t != NULL) {
+        pspid = t->pids[PIDTYPE_PID].pid;
+        if (pspid != NULL) error = kill_pid(pspid,sig,1);
+    }
+    rcu_read_unlock();
+    return error;
+}
+
+static work_func_t mywork_queue_func (void *data)
+{
+	unsigned int key;
+	int i;
+    printk("Work queue func's got started!\n");
+
+    while(1){
+		//status = 0;
+
+        GPFDAT &= ~(0x80); //GPF7 Low
+        GPGDAT |= (0x01); //GPG0 High
+
+        for(i = 0; i < 5; i++){
+            key = GPFDAT;
+            key &= (0x01 << (i + 2));
+            key = (key >> (i + 2));
+            if(key == 0){
+                status = i + 1;
+            } 	
+        }
+
+        GPFDAT |= 0x80; //GPF7 High
+        GPGDAT &= ~(0x01); //GPG0 Low
+
+        for(i = 0; i < 5; i++){
+            key = GPFDAT;
+            key &= (0x01 << (i + 2));
+            key = (key >> (i + 2));
+            if(key == 0) {
+                status = i + 6;	
+            }
+        }
+
+		switch(status){
+			case 1: 
+				del_timer(&timer);
+				printk("\nkeypad 2 was pressed \n");
+				GPGDAT |= (0x0f << 4);
+				GPGDAT &= ~(0x01 << 4);
+				status = 0; break;
+
+			case 2: 
+				del_timer(&timer);
+				printk("\nkeypad 3 was pressed \n");
+				GPGDAT |= (0x0f << 4);
+				GPGDAT &= ~(0x02 << 4);
+				status = 0; break;
+
+			case 3: 
+				del_timer(&timer);
+				printk("\nkeypad 4 was pressed \n");
+				GPGDAT |= (0x0f << 4);
+				GPGDAT &= ~(0x04 << 4);
+				status = 0; break;
+
+			case 4: 
+				del_timer(&timer);
+				printk("\nkeypad 5 was pressed \n");
+				GPGDAT |= (0x0f << 4);
+				GPGDAT &= ~(0x08 << 4);
+				status = 0; break;
+
+			case 5: 
+				del_timer(&timer);
+				printk("\nkeypad 6 was pressed \n");
+				GPGDAT |= (0x0f << 4);
+				GPGDAT &= ~(0x0f << 4);
+				status = 0; break;
+
+			case 6: 
+				del_timer(&timer);
+				printk("\nkeypad 7 was pressed \n");
+				GPGDAT |= (0x0f << 4);
+				GPGDAT &= ~(0x01 << 4);
+				status = 0; break;
+
+			case 7: 
+				del_timer(&timer);
+				printk("\nkeypad 8 was pressed \n");
+				GPGDAT |= (0x0f << 4);
+				GPGDAT &= ~(0x02 << 4);
+				status = 0; break;
+
+			case 8: 
+				del_timer(&timer);
+				printk("\nkeypad 9 was pressed \n");
+				GPGDAT |= (0x0f << 4);
+				GPGDAT &= ~(0x04 << 4);
+				status = 0; break;
+
+			case 9: 
+				del_timer(&timer);
+				printk("\nkeypad 10 was pressed \n");
+				GPGDAT |= (0x0f << 4);
+				GPGDAT &= ~(0x08 << 4);
+				status = 0; break;
+
+			case 10: 
+				del_timer(&timer);
+				printk("\nkeypad 11 was pressed \n");
+				GPGDAT |= (0x0f << 4);
+				GPGDAT &= ~(0x0f << 4);
+				status = 0; break;
+
+			default : break;
+		}
+	}
+
+	return 0;
+}
+
+void my_timer(unsigned long data)
+{
+	led = led << 1;
+	if(led > 0x8) led = 0x1;
+
+	GPGDAT |= (0xf << 4);
+	GPGDAT &= ~(led << 4);
+
+	timer.expires = jiffies + 1*HZ;
+	add_timer(&timer);
+
+	//printk("Kernel Timer Time-Out Function Done!!!\n");
+}
+
+static irqreturn_t key14int_func(int irq, void *dev_id, struct pt_regs *resgs)
+{
+    printk("SIGUSR1 sent....\n");
+	my_kill_proc(userpid, SIGUSR1);
+	schedule_delayed_work( &mywork,0);
+    return IRQ_HANDLED;
+}
+
+static irqreturn_t key15int_func(int irq, void *dev_id, struct pt_regs *resgs)
+{
+    printk("SIGUSR2 sent....\n");
+	my_kill_proc(userpid, SIGUSR2);
+
+	// set timer
+    init_timer(&timer);
+	//timer.expires = get_jiffies_64() + 3*HZ;
+	timer.expires = jiffies + 3*HZ;
+	timer.function = my_timer;
+	timer.data = 5;
+	add_timer(&timer);
+
+    return IRQ_HANDLED;
+}
+
+int project_init(void)
+{
+	int ret;
+	printk(KERN_INFO "project Module is Loaded!! ....\n");
+	// register module
+	if((result = project_register_cdev()) < 0)
+	{
+		return result;
+	}
+
+	// set Interrupt mode
+	s3c_gpio_cfgpin(S3C2410_GPF(0), S3C_GPIO_SFN(2));
+	s3c_gpio_cfgpin(S3C2410_GPF(1), S3C_GPIO_SFN(2));
+
+	if( request_irq(IRQ_EINT0, (void *)key14int_func,
+			IRQF_DISABLED|IRQF_TRIGGER_FALLING, DEVICE_NAME, NULL) )
+	{
+		printk("failed to request external interrupt.\n");
+		ret = -ENOENT;
+		return ret;
+	}
+	if(request_irq(IRQ_EINT1, (void *)key15int_func, 
+			IRQF_DISABLED|IRQF_TRIGGER_FALLING, DEVICE_NAME, NULL))
+	{
+		printk("failed to request external interrupt.\n");
+		ret = -ENOENT;
+		return ret;
+	}
+
+    /* H/W Initalization */
+    Gkva = ioremap(0x56000060, 16);
+    printk("Gkva = 0x%x\n", (int)Gkva);
+	Fkva = ioremap(0x56000050, 16);
+    printk("Gkva = 0x%x\n", (int)Fkva);
+    
+    GPGDAT |= 0xf << 4;
+
+    GPGCON &= ~(0xff << 8);
+    GPGCON |= 0x55 << 8;	
+
+	// key input mode
+	GPFCON &= ~(0x3 << 14);
+	GPFCON |= (0x1 << 14);	// GPF7 output
+	GPGCON &= ~(0x3); //GPG0 output
+	GPFCON &= ~(0x3ff << 4); // GPF2, 3, 4, 5, 6 input
+
+	printk(KERN_INFO "%s successfully loaded\n", DEVICE_NAME);
+
+	return 0;
+}
+
+static int project_open(struct inode *inode, struct file *filp)
+{
+    printk("Device has been opened...\n");
+    
+
+    return 0;
+}
+
+static int project_release(struct inode *inode, struct file *filp)
+{
+    printk("Device has been closed...\n");
+    
+    return 0;
+}
+
+static int project_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
+{
+	printk("project_write is invoked\n");
+	
+	get_user(userpid, (int *)buf);
+	printk("userpid : %d\n", userpid);
+	//my_kill_proc(userpid, SIGUSR1);
+    
+	return count;
+}
+
+static int project_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
+{
+	  printk("project_read is invoked\n");
+	  return 0;
+}
+
+static int project_ioctl ( struct file *filp, unsigned int cmd, unsigned long arg)  
+{  
+  
+   ioctl_buf *k_buf;
+   int   i,err, size;  
+      
+   if( _IOC_TYPE( cmd ) != IOCTL_MAGIC ) return -EINVAL;  
+   if( _IOC_NR( cmd )   >= IOCTL_MAXNR ) return -EINVAL;  
+
+   size = _IOC_SIZE( cmd );   
+ 
+   if( size )  
+   {  
+       err = -EFAULT;  
+       if( _IOC_DIR( cmd ) & _IOC_READ  ) 
+		err = !access_ok( VERIFY_WRITE, (void __user *) arg, size );  
+       else if( _IOC_DIR( cmd ) & _IOC_WRITE ) 
+		err = !access_ok( VERIFY_READ , (void __user *) arg, size );  
+       if( err ) return err;          
+   }  
+            
+   switch( cmd )  
+   {  
+      
+    //    case IOCTL_PROJECT_TEST :
+    //         printk("IOCTL_PROJECT_TEST Processed!!\n");
+	//     break;
+
+       case IOCTL_PROJECT_READ :
+            k_buf = kmalloc(size,GFP_KERNEL);
+            
+            //sprintf(k_buf->data, %s, "Hi, this was sent from Kernel to App");
+			strcpy(k_buf->data, "Hi, this was sent from kernel to App");
+			//printk("k_buf->data : %s\n", k_buf->data);
+            if(copy_to_user ( (void __user *) arg, k_buf, (unsigned long ) size ))
+	          return -EFAULT;   
+            kfree(k_buf);
+            printk("IOCTL_PROJECT_READ Processed!!\n");
+	    break;
+	                              
+		default :
+				printk("Invalid IOCTL  Processed!!\n");
+				break; 
+    }  
+  
+    return 0;  
+}  
+ 
+struct file_operations project_fops = { 
+    .open       = project_open,
+    .release    = project_release,
+	.write		= project_write,
+	.read		= project_read,
+	.unlocked_ioctl   = project_ioctl,
+};
+
+void project_exit(void)
+{
+	del_timer(&timer);
+
+	// gpio 해제
+	gpio_free(S3C2410_GPF(0));
+	gpio_free(S3C2410_GPF(1));
+
+	// 인터럽트 해제
+	free_irq(IRQ_EINT0, NULL);
+	free_irq(IRQ_EINT1, NULL);
+
+	// device 등록 해제
+    cdev_del(&project_cdev);
+	unregister_chrdev_region(MKDEV(project_major, 0), 1);
+
+	printk("project Module is Unloaded ....\n");
+}
+
+static int project_register_cdev(void)
+{
+	int error;
+
+	/* allocation device number */
+	if(project_major) {
+		project_dev = MKDEV(project_major, project_minor);
+		error = register_chrdev_region(project_dev, 1, "project");
+	} else {
+		error = alloc_chrdev_region(&project_dev, project_minor, 1, "project");
+		project_major = MAJOR(project_dev);
+	}
+
+	if(error < 0) {
+		printk(KERN_WARNING "project: can't get major %d\n", project_major);
+		return result;
+	}
+	printk("major number=%d\n", project_major);
+
+	/* register chrdev */
+	cdev_init(&project_cdev, &project_fops);
+	project_cdev.owner = THIS_MODULE;
+	project_cdev.ops = &project_fops;
+	error = cdev_add(&project_cdev, project_dev, 1);
+
+	if(error)
+		printk(KERN_NOTICE "project Register Error %d\n", error);
+
+	return 0;
+}
+
+module_init(project_init);
+module_exit(project_exit);
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+
+/*
+ #tail -f /var/log/messages
+*/
+
+```
+> sk_app.c
+```cpp
+/***************************************
+ * Filename: sk_app.c
+ * Title: Skeleton Device Application
+ * Desc: Implementation of system call
+ ***************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
+#include <mqueue.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+
+#include "project_ioctl.h"
+
+#define MAX_BUFFER 10
+
+int fd,size;
+
+char buf_out[MAX_BUFFER];
+ioctl_buf *buf_in;
+
+pid_t pid;
+
+pthread_t threads[2];
+pthread_attr_t      attr0, attr1;
+
+struct mq_attr attr;
+mqd_t mq;
+
+void recv_thread( void ) {
+	char msg[20];
+	int len;
+	unsigned int prio=0;
+
+    len = mq_receive(mq, msg, sizeof(msg), &prio);
+    sleep(1);
+
+    if ( len > 0 ) {
+        msg[len] = '\0';
+        printf( "\t\tI got [%s] message\n", msg);
+    }
+}
+
+void send_thread( void ) {
+	char msg[20] = "Program start!";
+	unsigned int prio = 0;
+
+   // printf( "S(%c, prio = %d)\n", c, prio );
+/* TODO: send c via message-q */ 
+    mq_send(mq, msg, sizeof(msg), prio);
+
+    sleep(1);
+}
+
+void mySigHdlr1(int signo)
+{
+  if (signo == SIGUSR1) {
+    printf("received SIGUSR1\n");
+    pthread_create(&threads[1], &attr1, (void*)send_thread, NULL);
+    pthread_detach(threads[1]);
+  }
+}
+
+void mySigHdlr2(int signo)
+{
+    size = sizeof(ioctl_buf);
+    buf_in = (ioctl_buf *)malloc(size);
+    if (signo == SIGUSR2) {
+        printf("received SIGUSR2\n");
+        
+        ioctl(fd, IOCTL_PROJECT_READ, buf_in);
+        printf("mySigHdlr2 : %s\n",buf_in->data);
+  }
+  free(buf_in);
+}
+
+int main(void)
+{
+
+    // 메시지 큐 생성
+	attr.mq_maxmsg  =  3;
+	attr.mq_msgsize = 20;
+	attr.mq_flags   =  0;
+
+	mq = mq_open("/mqueue", O_RDWR|O_CREAT,0,&attr);
+	if(mq == -1)
+	{
+		perror("mq_open error");
+		exit(0);
+	}	
+
+   // 시그널 생성
+    if (signal(SIGUSR1, mySigHdlr1) == SIG_ERR) {
+        printf("\ncan't catch SIGUSR1\n");
+    }
+    if (signal(SIGUSR2, mySigHdlr2) == SIG_ERR) {
+        printf("\ncan't catch SIGUSR2\n");
+    }
+
+	//system("insmod project_mod.ko");
+	//system("mknod /dev/project c 241 0");
+
+    // device file open
+    fd = open("/dev/project",O_RDWR);
+    
+    // pid 전달
+    pid = getpid();
+    printf("app process id : %d\n", pid);
+    write(fd, &pid, 4);
+
+    pthread_attr_init(&attr0); pthread_attr_init(&attr1);
+	//pthread_create(&threads[0], &attr0, (void*)recv_thread, NULL);
+
+    // start message가 큐에 들어가면 프로그램 계속 실행
+    printf("waiting for start message... press SW14 to start!\n");
+    recv_thread();
+
+	while(1){
+        printf("put 'close' :" );
+        gets(buf_out);
+        if(strcmp(buf_out, "close") == 0){
+            //system("rmmod project_mod.ko");
+            //system("rm /dev/project");
+            break;
+        }
+    }
+
+	close(fd);
+	return (0);
+}
+```
+ # # 내용정리
+  - 리눅스 커널 컴파일 개발환경 구축 
+    - 하드웨어
+    - 컴파일러
+    - 커널 소스코드
+    - 루트파일시스템
+    - 통신장비 : 디버거/UART/LAN...
+    - 각종 유틸리티 도구들
+  - mknod의 사용 : 리눅스에서는 File is everything
+  - VFS : 를 통해 모든것을 F.S로 관리 커널강좌, 협회 커널모듈 적재
+  - udev : 커널라인 3.x부터 등장 핫플러그 기능 추가를 위함
+  - Open/Release 호출의 기본 처리 : 초기화 동작
+  - 임베디드 리눅스 보드상의 인터럽트 처리 : 처리를 두 단계로 분리
+    1. 탑 하프
+    2. 바텀 하프
+  - 페리의 종류나 혹은 두 가지 사이의 구분이 전혀 없음, 소프트웨어 구성자의 마음임 따라서 두가지의 구분은 오로지 경험에 의함
+  - 인터럽트는 do_IRQ() 함수의 호출에 의함
+  - 인터럽트 서비스 처리 루틴
+  - 인터럽트 핸들러 : 리눅스의 3대 핸들러
+    1. 시그널 핸들러
+    2. 인터럽트 핸들러
+    3. 타이머 핸들러
+  - 워크 큐 함수포인터로 등록
+  - 커널에서의 타이머 서비스 등록
+    1. 하드웨어 타이머가 타이밍 관련 테스크를 처리하기 위해서 커널이 타이머 관련 기능을 제공 함
+    2. 주요 개념용어들
+       1. HZ : 1초당 발생되는 타이머 인터럽트 횟수
+       2. USER_HZ
+       3. jiffies: 초당 HZ값 만큼 증가하는 전역변수
+  - 마지막 최고 참고자료 : [리눅스 커널의 이해 요약](../리눅스커널의이해요약.md)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
