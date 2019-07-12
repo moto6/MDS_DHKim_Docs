@@ -3239,10 +3239,30 @@ int main(void)
        2. USER_HZ
        3. jiffies: 초당 HZ값 만큼 증가하는 전역변수
   - 마지막 최고 참고자료 : [리눅스 커널의 이해 요약](../리눅스커널의이해요약.md)
-
-
-
-
+> copy_to_user(), copy_from_user() 함수
+- 헤더파일 
+```
+#include <asm/uaccess.h>
+```
+> copy_to_user() 함수
+ - 기능 : 커널 메모리 -> 사용자 메모리   
+ - 형태 : int copy_to_user(void* send_buf, const void* recv_buf, unsigned long len)  
+ - 설명 : 커널에서 -> 사용자에게 메모리 주소를 통해 데이터를 전달한다
+ - 매개변수
+   1. send_buf: 사용자 메모리 블록 선두 주소
+   2. recv_buf: 커널 메모리 블록 선두 주소
+   3. len: 써넣을 바이트 단위의 크기
+ - 반환값  복사되지 않은 바이트수를 리턴. 정상적으로 수행이 되었다면 0. 
+> copy_from_user() 함수
+ - 기능 : 사용자 메모리 -> 커널 메모리 
+ - 형태 : int copy_from_user(void* recv_buf, const void * send_buf, unsigned long len)
+ - 설명 : 사용자에서 -> 커널에게 메모리 주소를 통해 데이터를 전달한다.
+ - 매개변수
+   1. recv_buf: 사용자 메모리 블록 선두 주소
+   2. send_buf: 커널 메모리 블록 선두 주소
+   3. len: 써넣을 바이트 단위의 크기
+ - 반환값  복사되지 않은 바이트수를 리턴. 정상적으로 수행이 되었다면 0. 
+### 파라미터의 recv_buf와 send_buf사이가 바뀌는것에 주의하자!!! 
 
 
 
