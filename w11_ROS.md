@@ -101,6 +101,23 @@
   #
   ## Day2
    - fd
+   ```
+   sudo apt-get remove vim-common
+   sudo apt-get install vim
+      25  sudo apt-get remove vim-common
+   26  sudo apt-get install vim
+   27  ls
+   28  vim
+   29  sudo apt-get install build-essential
+   30  gcc
+   31  subl
+   32* 
+   33  sudo apt-get install cmake
+   34  sudo apt-get install make
+   35  sudo apt-get install miniterm
+   36  sudo apt-get install terminator
+   37  sudo apt-get install minicom
+   ```
   #
   ## Day3
    - sdf
