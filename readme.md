@@ -86,32 +86,47 @@
    * [W7 Linux System programming](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W7_Linux%20system%20programming.md)
    * [W7 inux System programming 수업자료](Link)
     
- ## 8주차 요약본 & 수업자료 Link 디바이스 드라이버
-   * [W8 Infineon ARUIX & automotive 핵심정리&요약](W8_auto.md)
-   * [W 수업자료](Link)
+ ## 8주차 요약본 & 수업자료 : 리눅스 디바이스 드라이버
+   * [W8 Infineon ARUIX & automotive 핵심정리&요약](W8_auto.md.md)
+   * [W8 수업자료](Link)
+   * []()
     
- ## 주차 요약본 & 수업자료 Link
-   * [W 핵심정리&요약](Link)
-   * [W 수업자료](Link)
+ ## 9주차 요약본 & 수업자료 Link
+   * [W9 핵심정리&요약](W9_DD.md)
+   * [W9 수업자료](Link)
+   * []() 
+
+ ## 10주차 요약본 & 수업자료 Link
+   * [W10 핵심정리&요약](W10_OpenCV.md)
+   * [W10 수업자료](Link)
+   * []()
+
+ ## 11주차 요약본 & 수업자료 Link
+   * [W11 핵심정리&요약](w11_ROS.md)
+   * [W11 수업자료](Link)
+   * []()
+
+ ## 12주차 요약본 & 수업자료 Link
+   * [W12 핵심정리&요약](w12_ML.md)
+   * [W12 수업자료](Link)
+   * []()
+
+ ## 13주차 요약본 & 수업자료 Link
+   * [W13 핵심정리&요약](Link)
+   * [W13 수업자료](Link)
+   * []()  
+ ## 14주차 요약본 & 수업자료 Link
+   * [W14 핵심정리&요약](Link)
+   * [W14 수업자료](Link)
+   * []()
+
+ ## 15주차 요약본 & 수업자료 Link
+   * [W15 핵심정리&요약](Link)
+   * [W15 수업자료](Link)
+   * []()
     
- ## 주차 요약본 & 수업자료 Link
-   * [W 핵심정리&요약](Link)
-   * [W 수업자료](Link)
-    
- ## 주차 요약본 & 수업자료 Link
-   * [W 핵심정리&요약](Link)
-   * [W 수업자료](Link)
-    
- ## 주차 요약본 & 수업자료 Link
-   * [W 핵심정리&요약](Link)
-   * [W 수업자료](Link)
-    
- ## 주차 요약본 & 수업자료 Link
-   * [W 핵심정리&요약](Link)
-   * [W 수업자료](Link)
-    
- ## 주차 요약본 & 수업자료 Link
-   * [W 핵심정리&요약](Link)
-   * [W 수업자료](Link)
-   
+ ## 16주차 요약본 & 수업자료 Link
+   * [W16 핵심정리&요약](Link)
+   * [W16 수업자료](Link)
+   * []()
  
