@@ -104,6 +104,7 @@
         2. [CMake 소개와 예제, 내부 동작 원리](https://www.tuwlab.com/27234)
         3. [CMakeLists.txt 주요 명령과 변수 정리](https://www.tuwlab.com/27260)
         4. [CMakeLists.txt 기본 패턴](https://www.tuwlab.com/27270)
+   * [GNU Make 파일 튜토리얼 Makefile](http://korea.gnu.org/manual/4check/make-3.77/ko/make_toc.html)     
 
   ### 교육과정 외 개인 학습내용(insight, 책 제외)
    * [ARM 펌웨어 설계 강좌 수업정리, 6/1,2(토~일 마곡 로보티즈 캠퍼스) / baram님 교육 정리](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/ARM_FW.md) 
