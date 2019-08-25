@@ -51,13 +51,12 @@
  ## 8주차 요약본 & 수업자료 : 리눅스 디바이스 드라이버
    * [W8 Infineon ARUIX & automotive 핵심정리&요약](W8_auto.md.md)
    * [W8 수업자료](Link)
-   * []()
-    
  ## 9주차 요약본 & 수업자료 Link
    * [W9 핵심정리&요약](W9_DD.md)
    * [W9 수업자료](Link)
-   * []() 
-
+   * 더 알아보기 : OpenWRT
+     - 공개강의 [Link](http://openwrt.ssu.ac.kr/) : 세상은 넓고 대단하고 좋은분들이 참 많다.. 
+     - OpenWRT 리포지토리
  ## 10주차 요약본 & 수업자료 Link
    * [W10 핵심정리&요약](W10_OpenCV.md)
    * [W10 수업자료](Link)
