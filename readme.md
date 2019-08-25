@@ -5,17 +5,16 @@
  * [커리큘럼 mirror(190606박제)](https://github.com/our-self-driving-cars/course-resources/blob/master/metrial/%ED%95%9C%EC%BB%B4MDS%20IT%EC%9C%B5%ED%95%A9%20%EC%A0%84%EB%AC%B8%EA%B5%90%EC%9C%A1%EC%84%BC%ED%84%B0-%EC%9E%90%EC%9C%A8%EC%A3%BC%ED%96%89%20%EC%BB%A4%EB%A6%AC%ED%81%98%EB%9F%BC.pdf)
  * 지친다...
  #
- ## 학습 서적
+ ## 학습 서적(목록에 없는것은 내부교재....)
   1. 1주차 : C언어 -> [이것이 C언어다](http://www.kyobobook.co.kr/product/detailViewKor.laf?mallGb=KOR&ejkGb=KOR&barcode=9788968481024&orderClick=JAj)
      * [저자카페](https://cafe.naver.com/thisisc)
-  2. 2주차 : C언어 심화 -> MDS내부자료, MDS2450보드 활용 C언어 임베디드 
-  3. 3주차 : C++ 언어 -> [이것이 C++이다](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&mallGb=KOR&barcode=9788968482465&orderClick=LAG&Kc=)
+  2. 3주차 : C++ 언어 -> [이것이 C++이다](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&mallGb=KOR&barcode=9788968482465&orderClick=LAG&Kc=)
      * [저자카페](https://cafe.naver.com/windev)
-  4. 4주차 : Python 언어 -> [파이썬의 신](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&linkClass=331503&barcode=9788997924271)
+  3. 4주차 : Python 언어 -> [파이썬의 신](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&linkClass=331503&barcode=9788997924271)
      * [저자카페](https://cafe.naver.com/godofpython)
-  5. 10주차 : ROS [ROS로 배우는 로봇 프로그래밍](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&mallGb=KOR&barcode=9791185890753&orderClick=LAG&Kc=)
-  6. 추가1 : [ROS 로봇 프로그래밍](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&mallGb=KOR&barcode=9791186710180&orderClick=LAG&Kc=)
-  7. 추가2 : [밑바닥부터 시작하는 딥러닝](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&mallGb=KOR&barcode=9788968484636&orderClick=LET&Kc=)
+  4. 10주차 : ROS [ROS로 배우는 로봇 프로그래밍](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&mallGb=KOR&barcode=9791185890753&orderClick=LAG&Kc=)
+  5. 추가1 : [ROS 로봇 프로그래밍](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&mallGb=KOR&barcode=9791186710180&orderClick=LAG&Kc=)
+  6. 추가2 : [밑바닥부터 시작하는 딥러닝](http://www.kyobobook.co.kr/product/detailViewKor.laf?ejkGb=KOR&mallGb=KOR&barcode=9788968484636&orderClick=LET&Kc=)
  #
  ## 1주차 요약본 & 수업자료 Link
    * [W1_This-C 수업요약](https://github.com/d-h-k/MDS_DHKim_Docs/blob/master/W1_This-C.md)
