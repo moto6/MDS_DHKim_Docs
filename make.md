@@ -1,3 +1,6 @@
+
+출처 : https://wiki.kldp.org/KoreanDoc/html/GNU-Make/GNU-Make-2.html
+원문 : https://wiki.kldp.org/KoreanDoc/html/GNU-Make/GNU-Make-2.html
 # 2. 간단한 Makefile
 ## 2.1 Makefile 의 내부 구조
 Makefile은 기본적으로 아래와 같이 목표(target), 의존 관계(dependency), 명령(command)의 세개로 이루어진 기분적인 규칙(rule)들이 계속적으로 나열되어 있다고 봐도 무방하다. make가 지능적으로 파일을 갱신하는 것도 모두 이 간단한 규칙에 의하기 때문이다.
