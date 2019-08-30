@@ -34,6 +34,8 @@
         ```
         sudo apt install ros-melodic-desktop
         ```
+        
+        run
 
     - 식당 서빙로봇 : 흥미, 재미, 정리할수 있고, 포트폴리오 가치있는? BM 도 고려
 
