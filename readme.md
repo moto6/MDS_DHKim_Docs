@@ -6,6 +6,7 @@
  * 지친다... 하지만 힘을내자 
  * mds는유감송. 매우 유감송
  * 코딩빡고수 딥러닝 빡고수 캐글과 콜랩!
+₩₩₩₩₩
  #
  ## 학습 서적(목록에 없는것은 내부교재....)
   1. 1주차 : C언어 -> [이것이 C언어다](http://www.kyobobook.co.kr/product/detailViewKor.laf?mallGb=KOR&ejkGb=KOR&barcode=9788968481024&orderClick=JAj)
